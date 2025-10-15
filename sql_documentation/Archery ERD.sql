@@ -107,7 +107,7 @@ CREATE TABLE "club" (
 );
 
 CREATE TABLE "australia_archery_federation" (
-  "account_id" int PRIMARY KEY,
+  "member_id" int PRIMARY KEY,
   "date_joined" int
 );
 
@@ -255,7 +255,7 @@ ALTER TABLE "recorder" ADD FOREIGN KEY ("recorder_id") REFERENCES "account" ("ac
 
 ALTER TABLE "admin" ADD FOREIGN KEY ("admin_id") REFERENCES "account" ("account_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "australia_archery_federation" ADD FOREIGN KEY ("account_id") REFERENCES "account" ("account_id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "australia_archery_federation" ADD FOREIGN KEY ("member_id") REFERENCES "account" ("account_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "participating" ADD FOREIGN KEY ("participant_id") REFERENCES "archer" ("archer_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
