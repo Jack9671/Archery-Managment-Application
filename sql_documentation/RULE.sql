@@ -196,14 +196,19 @@ CHECK (EXTRACT(YEAR FROM date_start) = EXTRACT(YEAR FROM date_end));
     Case 1: If type is "enrol", then insert.
     Case 2: If type is "withdraw", then delete. 
     The tables that will be affected together are archer table, recorder table, and participant_score table. 
-    Particularly, Case 1: automatically insert a new row in participant_score table or recorder table depending on role attribute. If role is recorder, then add new row of recorder with given competition_id and round_id. If role is participant, then automatically generate N new rows in participant_score. N is the total number of rows sharing same given competition_id and round_id.
-                  Case 2: automatically delete N rows in participant_score table or recorder table depending on role attribute. If role is recorder, then delete new row of recorder with given competition_id and round_id. If role is participant, then automatically delete N existing rows in participant_score. N is the total number of rows sharing same given competition_id and round_id.
+    Particularly, Case 1: automatically insert a new row in participant_score table or recorder table depending on role attribute. If role is recorder, then add new row of recorder with given competition_id and round_id. If role is participant, then automatically generate N new rows in participant_score. N is the total number of rows sharing same given competition_id and round_id. If role is archer, then add that account_id in account table to archer_id in archer table
+                  Case 2: automatically delete N rows in participant_score table or recorder table depending on role attribute. If role is recorder, then delete new row of recorder with given competition_id and round_id. If role is participant, then automatically delete N existing rows in participant_score. N is the total number of rows sharing same given competition_id and round_id. If role is archer, then delete the archer_id in archer table whose archer_id == account_id in account table  
     */
--- Trigger function for Rule 1: when request_form.status becomes ''eligible''
 CREATE OR REPLACE FUNCTION trg_request_form_status_to_eligible()
 RETURNS trigger AS $$
+DECLARE
+  -- Set this to an appropriate existing equipment id in your DB.
+  -- If you have a canonical default equipment row, put its id here.
+  -- Alternative: change the schema to give archer.default_equipment_id a DEFAULT value
+  -- or allow NULL and populate later.
+  v_default_equipment_id INT := 1;
 BEGIN
-  -- Only act when status transitions to ''eligible'' from something else
+  -- Only act when status transitions to 'eligible' from something else
   IF NEW.status = 'eligible' AND (OLD.status IS DISTINCT FROM 'eligible') THEN
 
     -- CASE: ENROL
@@ -216,9 +221,8 @@ BEGIN
         ON CONFLICT DO NOTHING;
       END IF;
 
-      -- Subcase: participant role -> insert participant row AND create N participant_score rows
+      -- Subcase: participant role -> insert participant rows for each event_context
       IF NEW.role = 'participant' THEN
-
         INSERT INTO participant_score (
           participant_id,
           event_context_id,
@@ -247,6 +251,21 @@ BEGIN
         ON CONFLICT (participant_id, event_context_id) DO NOTHING;
       END IF;
 
+      -- Subcase: archer role -> insert into archer table
+      IF NEW.role = 'archer' THEN
+        /*
+          NOTE:
+          - archer.default_equipment_id is NOT NULL in your schema.
+          - v_default_equipment_id must refer to a real equipment row in your DB.
+          - Alternatives: (A) set a DEFAULT on archer.default_equipment_id column,
+                          (B) allow NULL temporarily, or
+                          (C) include default_equipment_id in the request_form so client supplies it.
+        */
+        INSERT INTO archer (archer_id, default_equipment_id, club_id)
+        VALUES (NEW.account_id, v_default_equipment_id, NULL)
+        ON CONFLICT (archer_id) DO NOTHING;
+      END IF;
+
     ELSIF NEW.type = 'withdraw' THEN
       -- CASE: WITHDRAW
 
@@ -270,6 +289,12 @@ BEGIN
           );
       END IF;
 
+      -- Subcase: archer role -> delete archer row
+      IF NEW.role = 'archer' THEN
+        DELETE FROM archer
+        WHERE archer_id = NEW.account_id;
+      END IF;
+
     END IF; -- NEW.type
 
   END IF; -- status changed to eligible
@@ -278,7 +303,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Attach trigger: fires AFTER UPDATE OF status on request_form
 DROP TRIGGER IF EXISTS request_form_status_to_eligible_trg ON request_form;
 CREATE TRIGGER request_form_status_to_eligible_trg
 AFTER UPDATE OF status ON request_form
