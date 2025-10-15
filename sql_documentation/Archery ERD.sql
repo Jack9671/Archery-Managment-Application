@@ -165,7 +165,7 @@ CREATE TABLE "request_form" (
   "applicant_comment" text NOT NULL,
   "status" status_enum NOT NULL,
   "reviewer_comment" text,
-  "reviewd_by" int,
+  "reviewed_by" int,
   "create_at" timestamptz,
   "updated_at" timestamptz
 );
@@ -515,9 +515,9 @@ ALTER TABLE "request_form" ADD FOREIGN KEY ("competition_id") REFERENCES "compet
 
 ALTER TABLE "request_form" ADD FOREIGN KEY ("round_id") REFERENCES "round" ("round_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "request_form" ADD FOREIGN KEY ("reviewd_by") REFERENCES "recorder" ("recorder_id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "request_form" ADD FOREIGN KEY ("reviewed_by") REFERENCES "recorder" ("recorder_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "request_form" ADD FOREIGN KEY ("reviewd_by") REFERENCES "admin" ("admin_id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "request_form" ADD FOREIGN KEY ("reviewed_by") REFERENCES "admin" ("admin_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "archer" ADD FOREIGN KEY ("default_equipment_id") REFERENCES "equipment" ("equipment_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -526,3 +526,7 @@ ALTER TABLE "round_equipment_compatibility" ADD FOREIGN KEY ("round_id") REFEREN
 ALTER TABLE "round_equipment_compatibility" ADD FOREIGN KEY ("equipment_id") REFERENCES "equipment" ("equipment_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "range" ADD FOREIGN KEY ("target_face_id") REFERENCES "target_face" ("target_face_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "recorder" ADD FOREIGN KEY ("competition_id") REFERENCES "competition" ("competition_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "recorder" ADD FOREIGN KEY ("round_id") REFERENCES "round" ("round_id") ON DELETE SET NULL ON UPDATE CASCADE;
