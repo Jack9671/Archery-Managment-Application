@@ -210,6 +210,14 @@ CREATE TABLE "target_face" (
   "unit_of_length" unit_of_length_enum NOT NULL
 );
 
+CREATE TABLE "ai_conversation_history" (
+  "account_id" int,
+  "prompt_response_order" int,
+  "prompt" text NOT NULL,
+  "response" text NOT NULL,
+  PRIMARY KEY ("account_id", "prompt_response_order")
+);
+
 COMMENT ON COLUMN "account"."email_address" IS 'used for authentication and as an account name when log in or sign up';
 
 COMMENT ON COLUMN "account"."fullname" IS 'current world record for longest name existed :))';
@@ -287,6 +295,8 @@ ALTER TABLE "recording" ADD FOREIGN KEY ("round_id") REFERENCES "round" ("round_
 
 ALTER TABLE "recording" ADD FOREIGN KEY ("recorder_id") REFERENCES "recorder" ("recorder_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "club_enrollment_form" ADD FOREIGN KEY ("sender_id") REFERENCES "archer" ("archer_id");
+ALTER TABLE "club_enrollment_form" ADD FOREIGN KEY ("sender_id") REFERENCES "archer" ("archer_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "club_enrollment_form" ADD FOREIGN KEY ("club_id") REFERENCES "club" ("club_id");
+ALTER TABLE "club_enrollment_form" ADD FOREIGN KEY ("club_id") REFERENCES "club" ("club_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "ai_conversation_history" ADD FOREIGN KEY ("account_id") REFERENCES "account" ("account_id") ON DELETE SET NULL ON UPDATE CASCADE;
