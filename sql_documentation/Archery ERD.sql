@@ -76,7 +76,7 @@ CREATE TABLE "admin" (
 );
 
 CREATE TABLE "recorder" (
-  "recorder_id" int NOT NULL,
+  "recorder_id" int PRIMARY KEY,
   "year_of_experience" int NOT NULL,
   "background" text
 );
