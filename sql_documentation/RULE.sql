@@ -15,6 +15,35 @@ CHECK (
 );
 
 
+  --RULE1: round_id != equivalent_round_id:
+
+ALTER TABLE equivalent_round
+ADD CONSTRAINT chk_rounds_not_equal
+CHECK (round_id <> equivalent_round_id);
+
+
+-- RULE2: Prevent reciprocal duplicates with the same date range.
+-- e.g. if (x, y, start, end) exists then (y, x, start, end) is not allowed.
+
+-- optional: find any existing offending pairs first
+SELECT
+  LEAST(round_id, equivalent_round_id) AS a,
+  GREATEST(round_id, equivalent_round_id) AS b,
+  date_valid_start, date_valid_end,
+  count(*) AS cnt
+FROM equivalent_round
+GROUP BY a, b, date_valid_start, date_valid_end
+HAVING count(*) > 1;
+
+-- add the unique index on the canonical (unordered) pair + date range
+CREATE UNIQUE INDEX ux_equivalent_round_unordered_pair_dates
+ON equivalent_round (
+  (LEAST(round_id, equivalent_round_id)),
+  (GREATEST(round_id, equivalent_round_id)),
+  date_valid_start,
+  date_valid_end
+);
+
   -- RULE1: When year of a yearly_club_championship row is updated, all competition.date_start and competition.date_end for competitions that are linked to that championship (via event_context) will have their year part changed to the new year, preserving month/day when possible. (If the original date was Feb 29 and the new year is not a leap year, it will become Feb 28.)
 
 -- ===== propagate championship YEAR changes to linked competitions =====
