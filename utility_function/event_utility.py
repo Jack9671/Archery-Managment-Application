@@ -378,3 +378,110 @@ def get_available_ranges():
     except Exception as e:
         print(f"Error fetching ranges: {e}")
         return pd.DataFrame()
+
+def get_all_clubs():
+    """Get all clubs from database"""
+    try:
+        response = supabase.table("club").select("club_id, name").execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Error fetching clubs: {e}")
+        return []
+
+def create_eligible_group_with_clubs(club_ids):
+    """
+    Create a new eligible group and add clubs to it
+    
+    Args:
+        club_ids: List of club IDs to add to the group
+    
+    Returns:
+        eligible_group_id or None on failure
+    """
+    try:
+        # Create the eligible group
+        group_response = supabase.table("eligible_group_of_club").insert({}).execute()
+        
+        if not group_response.data:
+            return None
+        
+        eligible_group_id = group_response.data[0]['eligible_group_of_club_id']
+        
+        # Add clubs to the group
+        if club_ids:
+            members_to_insert = [
+                {"eligible_group_of_club_id": eligible_group_id, "eligible_club_id": club_id}
+                for club_id in club_ids
+            ]
+            
+            members_response = supabase.table("eligible_club_member").insert(members_to_insert).execute()
+            
+            if not members_response.data:
+                # Rollback: delete the group if we can't add members
+                supabase.table("eligible_group_of_club").delete().eq("eligible_group_of_club_id", eligible_group_id).execute()
+                return None
+        
+        return eligible_group_id
+    
+    except Exception as e:
+        print(f"Error creating eligible group: {e}")
+        return None
+
+def get_eligible_group_details(eligible_group_id):
+    """
+    Get details of an eligible group including all member clubs
+    
+    Args:
+        eligible_group_id: ID of the eligible group
+    
+    Returns:
+        Dict with group info and list of clubs, or None
+    """
+    try:
+        # Get club members
+        members_response = supabase.table("eligible_club_member").select("eligible_club_id").eq("eligible_group_of_club_id", eligible_group_id).execute()
+        
+        if not members_response.data:
+            return {"eligible_group_id": eligible_group_id, "clubs": []}
+        
+        club_ids = [m['eligible_club_id'] for m in members_response.data]
+        
+        # Get club details
+        clubs_response = supabase.table("club").select("club_id, name").in_("club_id", club_ids).execute()
+        
+        clubs = clubs_response.data if clubs_response.data else []
+        
+        return {
+            "eligible_group_id": eligible_group_id,
+            "clubs": clubs
+        }
+    
+    except Exception as e:
+        print(f"Error fetching eligible group details: {e}")
+        return None
+
+def get_all_eligible_groups():
+    """
+    Get all eligible groups with their member clubs
+    
+    Returns:
+        List of dicts with group info and clubs
+    """
+    try:
+        groups_response = supabase.table("eligible_group_of_club").select("eligible_group_of_club_id").execute()
+        
+        if not groups_response.data:
+            return []
+        
+        groups_with_clubs = []
+        for group in groups_response.data:
+            group_id = group['eligible_group_of_club_id']
+            group_details = get_eligible_group_details(group_id)
+            if group_details:
+                groups_with_clubs.append(group_details)
+        
+        return groups_with_clubs
+    
+    except Exception as e:
+        print(f"Error fetching eligible groups: {e}")
+        return []

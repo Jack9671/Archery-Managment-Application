@@ -8,7 +8,9 @@ from utility_function.event_utility import (
     get_all_events, get_event_hierarchy, get_eligible_clubs,
     get_request_forms, update_form_status, get_round_schedule,
     create_yearly_championship, create_club_competition,
-    get_available_rounds, create_complete_event
+    get_available_rounds, create_complete_event,
+    get_all_clubs, create_eligible_group_with_clubs,
+    get_eligible_group_details, get_all_eligible_groups
 )
 import utility_function.event_utility as event_utility
 
@@ -24,8 +26,8 @@ st.write(f"Welcome, {st.session_state.get('fullname')}!")
 user_role = st.session_state.get('role')
 
 if user_role == 'recorder':
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "⚙️ Event Management"])
-    tab_browse, tab_enroll, tab_review, tab_schedule, tab_manage = tabs
+    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🏢 Club Groups", "⚙️ Event Management"])
+    tab_browse, tab_enroll, tab_review, tab_schedule, tab_club_groups, tab_manage = tabs
 else:
     tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule"])
     tab_browse = tabs[0]
@@ -231,6 +233,11 @@ with tab_enroll:
     
     # Tab 2.1: Submit Form
     st.subheader("📝 Submit Request Form")
+    #note
+    st.write("""⚠️ **Note:** If you fill in an id for a yearly club championship, leave club competition id empty. 
+    You can only fill in club competition id that does not belong to any yearly championship and still skip yearly championship id.
+    Then if you are recorders, you do not need to fill in round id, as you will be responsible for the whole club competition if the club competition does not belong to any yearly championship; in that case, leave the yearly club championship id empty and fill in the club competition id. If the club competition belongs to a yearly championship, then you are responsible for all club competitions that make up the yearly club championship, so there is no need to fill in club competition id — the yearly club championship id is sufficient.
+    If you are archers, you must fill in round id, as you are only participating in a specific round as competitors. If you choose to participate in a round in a club competition that does not belong to any yearly championship, you must fill in the club competition id and round id only. If you want to participate in a round in a club competition that belongs to a yearly championship, you only need to fill in the yearly club championship id and round id as you must participate in the same round in all club competitions that make up the yearly club championship; doing so makes calculating scores easier.""")
     
     with st.form("event_request_form"):
         col1, col2 = st.columns(2)
@@ -445,7 +452,95 @@ if user_role == 'recorder':
         else:
             st.info("No forms found with the current filters.")
     
-    # Tab 5: Event Management (Recorder only)
+    # Tab 5: Club Groups Management (Recorder only)
+    with tab_club_groups:
+        st.header("🏢 Eligible Club Groups Management")
+        st.write("Create and manage groups of clubs that can participate in events")
+        
+        club_groups_tab1, club_groups_tab2 = st.tabs(["➕ Create Club Group", "📋 View Existing Groups"])
+        
+        with club_groups_tab1:
+            st.subheader("Create New Eligible Club Group")
+            st.info("💡 Create a group of clubs that will be eligible to participate in specific events. Leave empty to allow all clubs.")
+            
+            # Get all available clubs
+            all_clubs = get_all_clubs()
+            
+            if all_clubs:
+                st.write(f"**Available Clubs:** {len(all_clubs)} clubs in database")
+                
+                # Create a multiselect for clubs
+                club_options = {f"{club['name']} (ID: {club['club_id']})": club['club_id'] 
+                              for club in all_clubs}
+                
+                selected_clubs = st.multiselect(
+                    "Select Clubs for This Group*",
+                    options=list(club_options.keys()),
+                    help="Select one or more clubs to include in this eligible group"
+                )
+                
+                if selected_clubs:
+                    st.write(f"**Selected:** {len(selected_clubs)} club(s)")
+                    
+                    # Show preview
+                    with st.expander("📋 Preview Selected Clubs"):
+                        for club_name in selected_clubs:
+                            st.write(f"- {club_name}")
+                    
+                    if st.button("✅ Create Eligible Group", type="primary", use_container_width=True):
+                        with st.spinner("Creating eligible club group..."):
+                            # Get club IDs from selected names
+                            selected_club_ids = [club_options[club_name] for club_name in selected_clubs]
+                            
+                            # Create the group
+                            group_id = create_eligible_group_with_clubs(selected_club_ids)
+                            
+                            if group_id:
+                                st.success(f"✅ Successfully created Eligible Group with ID: {group_id}")
+                                st.balloons()
+                                st.info(f"💡 You can now use Group ID **{group_id}** when creating events to restrict participation to these clubs.")
+                            else:
+                                st.error("❌ Failed to create eligible group. Please try again.")
+                else:
+                    st.warning("⚠️ Please select at least one club to create a group.")
+            else:
+                st.warning("No clubs found in the database. Clubs must be created first before creating eligible groups.")
+        
+        with club_groups_tab2:
+            st.subheader("Existing Eligible Club Groups")
+            
+            if st.button("🔄 Refresh Groups", type="secondary"):
+                st.rerun()
+            
+            # Get all eligible groups
+            with st.spinner("Loading eligible groups..."):
+                all_groups = get_all_eligible_groups()
+            
+            if all_groups:
+                st.success(f"Found {len(all_groups)} eligible group(s)")
+                
+                # Display each group
+                for group in all_groups:
+                    with st.expander(f"🏢 Group ID: {group['eligible_group_id']} ({len(group['clubs'])} clubs)", expanded=False):
+                        st.write(f"**Group ID:** {group['eligible_group_id']}")
+                        st.write(f"**Number of Clubs:** {len(group['clubs'])}")
+                        
+                        if group['clubs']:
+                            st.write("**Member Clubs:**")
+                            
+                            # Create a dataframe for better display
+                            clubs_df = pd.DataFrame(group['clubs'])
+                            st.dataframe(clubs_df, use_container_width=True, hide_index=True)
+                        else:
+                            st.info("This group has no member clubs.")
+                        
+                        # Show usage information
+                        st.divider()
+                        st.write("**💡 Usage:** Use this Group ID when creating events to restrict participation to these clubs only.")
+            else:
+                st.info("No eligible club groups exist yet. Create one using the 'Create Club Group' tab.")
+    
+    # Tab 6: Event Management (Recorder only)
     with tab_manage:
         st.header("⚙️ Event Management")
         st.write("Create and manage events")
@@ -492,9 +587,45 @@ if user_role == 'recorder':
                                                      value=st.session_state.event_builder_data.get('name', ''))
                     year = st.number_input("Year*", min_value=2020, max_value=2100, 
                                           value=st.session_state.event_builder_data.get('year', datetime.now().year))
-                    eligible_group_id = st.text_input("Eligible Group ID (Optional)", 
-                                                     value=st.session_state.event_builder_data.get('eligible_group_id', ''),
-                                                     help="Leave empty if all clubs are eligible")
+                    
+                    # Eligible Group Selection with better UI
+                    st.write("**Club Eligibility**")
+                    all_groups = get_all_eligible_groups()
+                    
+                    if all_groups:
+                        group_options = {f"All Clubs (No Restriction)": None}
+                        for group in all_groups:
+                            group_label = f"Group {group['eligible_group_id']} ({len(group['clubs'])} clubs)"
+                            group_options[group_label] = group['eligible_group_id']
+                        
+                        # Find current selection
+                        current_group_id = st.session_state.event_builder_data.get('eligible_group_id')
+                        current_index = 0
+                        if current_group_id:
+                            for idx, (label, gid) in enumerate(group_options.items()):
+                                if gid == current_group_id:
+                                    current_index = idx
+                                    break
+                        
+                        selected_group_label = st.selectbox(
+                            "Select Eligible Club Group",
+                            options=list(group_options.keys()),
+                            index=current_index,
+                            help="Choose which clubs can participate. Select 'All Clubs' for no restrictions."
+                        )
+                        
+                        eligible_group_id = group_options[selected_group_label]
+                        
+                        # Show preview of selected group
+                        if eligible_group_id:
+                            group_details = get_eligible_group_details(eligible_group_id)
+                            if group_details and group_details['clubs']:
+                                with st.expander(f"📋 Preview: {len(group_details['clubs'])} eligible clubs"):
+                                    for club in group_details['clubs']:
+                                        st.write(f"- {club['name']}")
+                    else:
+                        st.info("ℹ️ No eligible club groups exist. All clubs will be able to participate.")
+                        eligible_group_id = None
                     
                     col1, col2 = st.columns([1, 1])
                     with col1:
@@ -527,9 +658,44 @@ if user_role == 'recorder':
                         date_end = st.date_input("End Date*",
                                                 value=st.session_state.event_builder_data.get('date_end', date.today()))
                     
-                    eligible_group_id = st.text_input("Eligible Group ID (Optional)",
-                                                     value=st.session_state.event_builder_data.get('eligible_group_id', ''),
-                                                     help="Leave empty if all clubs are eligible")
+                    # Eligible Group Selection with better UI
+                    st.write("**Club Eligibility**")
+                    all_groups = get_all_eligible_groups()
+                    
+                    if all_groups:
+                        group_options = {f"All Clubs (No Restriction)": None}
+                        for group in all_groups:
+                            group_label = f"Group {group['eligible_group_id']} ({len(group['clubs'])} clubs)"
+                            group_options[group_label] = group['eligible_group_id']
+                        
+                        # Find current selection
+                        current_group_id = st.session_state.event_builder_data.get('eligible_group_id')
+                        current_index = 0
+                        if current_group_id:
+                            for idx, (label, gid) in enumerate(group_options.items()):
+                                if gid == current_group_id:
+                                    current_index = idx
+                                    break
+                        
+                        selected_group_label = st.selectbox(
+                            "Select Eligible Club Group",
+                            options=list(group_options.keys()),
+                            index=current_index,
+                            help="Choose which clubs can participate. Select 'All Clubs' for no restrictions."
+                        )
+                        
+                        eligible_group_id = group_options[selected_group_label]
+                        
+                        # Show preview of selected group
+                        if eligible_group_id:
+                            group_details = get_eligible_group_details(eligible_group_id)
+                            if group_details and group_details['clubs']:
+                                with st.expander(f"📋 Preview: {len(group_details['clubs'])} eligible clubs"):
+                                    for club in group_details['clubs']:
+                                        st.write(f"- {club['name']}")
+                    else:
+                        st.info("ℹ️ No eligible club groups exist. All clubs will be able to participate.")
+                        eligible_group_id = None
                     
                     col1, col2 = st.columns([1, 1])
                     with col1:
