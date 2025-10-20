@@ -226,9 +226,9 @@ with tab4:
                 with col1:
                     st.write(f"**Report ID:** {report['report_id']}")
                     st.write(f"**Reporter ID:** {report['reporter_id']}")
-                    st.write(f"**Reported Account ID:** {report['reported_id']}")
-                    st.write(f"**Reason:**")
-                    st.text_area("", value=report.get('reason', 'No reason provided'), disabled=True, key=f"reason_{report['report_id']}")
+                    st.write(f"**Reported Account ID:** {report['target_account_id']}")
+                    st.write(f"**Report Content:**")
+                    st.text_area("", value=str(report.get('report_content', 'No content provided')), disabled=True, key=f"reason_{report['report_id']}")
                     
                     if report.get('evidence_pdf_file_url'):
                         st.write(f"**Evidence:** [View PDF]({report['evidence_pdf_file_url']})")
@@ -240,7 +240,7 @@ with tab4:
                     
                     with col_accept:
                         if st.button("✅ Accept", key=f"accept_{report['report_id']}", type="primary"):
-                            success = update_report_status(report['report_id'], "eligible", report['reported_id'])
+                            success = update_report_status(report['report_id'], "eligible", report['target_account_id'])
                             if success:
                                 # Delete report after accepting
                                 delete_report(report['report_id'])
