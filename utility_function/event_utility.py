@@ -165,7 +165,7 @@ def create_yearly_championship(creator_id, year, championship_name, eligible_gro
         response = supabase.table("yearly_club_championship").insert({
             "creator_id": creator_id,
             "year": year,
-            "championship_name": championship_name,
+            "name": championship_name,
             "eligible_group_of_club_id": eligible_group_id
         }).execute()
         return response.data[0] if response.data else None
@@ -173,12 +173,13 @@ def create_yearly_championship(creator_id, year, championship_name, eligible_gro
         print(f"Error creating yearly championship: {e}")
         return None
 
-def create_club_competition(creator_id, competition_name, date_start, date_end, eligible_group_id=None, yearly_championship_id=None):
+def create_club_competition(creator_id, competition_name, date_start, date_end, address="TBA", eligible_group_id=None, yearly_championship_id=None):
     """Create a new club competition"""
     try:
         response = supabase.table("club_competition").insert({
             "creator_id": creator_id,
-            "competition_name": competition_name,
+            "name": competition_name,
+            "address": address,
             "date_start": date_start,
             "date_end": date_end,
             "eligible_group_of_club_id": eligible_group_id

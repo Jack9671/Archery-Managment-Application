@@ -293,12 +293,7 @@ with tab_enroll:
                     else:
                         st.error("Failed to submit request. Please try again.")
                 except Exception as e:
-                    error_msg = str(e)
-                    if "duplicate key value violates unique constraint" in error_msg and "form_id" in error_msg:
-                        st.error("⚠️ Database sequence error detected. Please contact an administrator to reset the sequence.")
-                        st.info("Technical details: The auto-increment sequence is out of sync with the database.")
-                    else:
-                        st.error(f"Error submitting request: {error_msg}")
+                    st.error(f"Error submitting request: {str(e)}")
     
     # Tab 2.2: View My Forms
     st.divider()
@@ -495,6 +490,7 @@ if user_role == 'recorder':
                     st.write("**Club Competition Details**")
                     
                     competition_name = st.text_input("Competition Name*")
+                    address = st.text_input("Address*", placeholder="e.g., 123 Archery Lane, Sydney NSW 2000")
                     
                     col1, col2 = st.columns(2)
                     with col1:
@@ -510,12 +506,15 @@ if user_role == 'recorder':
                     if submit_competition:
                         if not competition_name:
                             st.error("Competition name is required!")
+                        elif not address:
+                            st.error("Address is required!")
                         elif date_end < date_start:
                             st.error("End date must be after start date!")
                         else:
                             result = create_club_competition(
                                 creator_id=st.session_state.user_id,
                                 competition_name=competition_name,
+                                address=address,
                                 date_start=date_start.isoformat(),
                                 date_end=date_end.isoformat(),
                                 eligible_group_id=int(eligible_group_id) if eligible_group_id else None
