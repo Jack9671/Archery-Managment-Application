@@ -10,36 +10,36 @@
 -- ============================================
 
 -- Admin Account
-INSERT INTO account (account_id, email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
 VALUES 
-(1, 'admin1@archery.com.au', 'admin1@archery.com.au', 'Sarah Johnson', 'Australia', '1985-03-15', 'female', 'admin', NOW(), NOW());
+('admin1@archery.com.au', 'admin1@archery.com.au', 'Sarah Johnson', 'Australia', '1985-03-15', 'female', 'admin', NOW(), NOW());
 
 -- Australia Archery Federation Members
-INSERT INTO account (account_id, email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
 VALUES 
-(2, 'federation1@archery.com.au', 'federation1@archery.com.au', 'Michael Thompson', 'Australia', '1978-07-22', 'male', 'australia_archery_federation', NOW(), NOW()),
-(3, 'federation2@archery.com.au', 'federation2@archery.com.au', 'Emma Davis', 'Australia', '1982-11-30', 'female', 'australia_archery_federation', NOW(), NOW());
+('federation1@archery.com.au', 'federation1@archery.com.au', 'Michael Thompson', 'Australia', '1978-07-22', 'male', 'australia_archery_federation', NOW(), NOW()),
+('federation2@archery.com.au', 'federation2@archery.com.au', 'Emma Davis', 'Australia', '1982-11-30', 'female', 'australia_archery_federation', NOW(), NOW());
 
 -- Recorders
-INSERT INTO account (account_id, email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
 VALUES 
-(4, 'recorder1@archery.com.au', 'recorder1@archery.com.au', 'David Chen', 'Australia', '1990-05-12', 'male', 'recorder', NOW(), NOW()),
-(5, 'recorder2@archery.com.au', 'recorder2@archery.com.au', 'Lisa Martinez', 'Australia', '1988-09-25', 'female', 'recorder', NOW(), NOW()),
-(6, 'recorder3@archery.com.au', 'recorder3@archery.com.au', 'James Anderson', 'Australia', '1992-02-18', 'male', 'recorder', NOW(), NOW());
+('recorder1@archery.com.au', 'recorder1@archery.com.au', 'David Chen', 'Australia', '1990-05-12', 'male', 'recorder', NOW(), NOW()),
+('recorder2@archery.com.au', 'recorder2@archery.com.au', 'Lisa Martinez', 'Australia', '1988-09-25', 'female', 'recorder', NOW(), NOW()),
+('recorder3@archery.com.au', 'recorder3@archery.com.au', 'James Anderson', 'Australia', '1992-02-18', 'male', 'recorder', NOW(), NOW());
 
 -- Archers
-INSERT INTO account (account_id, email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
 VALUES 
-(7, 'archer1@email.com', 'archer1@email.com', 'Oliver Brown', 'Australia', '2000-06-15', 'male', 'archer', NOW(), NOW()),
-(8, 'archer2@email.com', 'archer2@email.com', 'Sophie Taylor', 'Australia', '1998-03-22', 'female', 'archer', NOW(), NOW()),
-(9, 'archer3@email.com', 'archer3@email.com', 'Liam Harris', 'Australia', '2002-11-30', 'male', 'archer', NOW(), NOW()),
-(10, 'archer4@email.com', 'archer4@email.com', 'Isabella White', 'Australia', '1995-08-17', 'female', 'archer', NOW(), NOW()),
-(11, 'archer5@email.com', 'archer5@email.com', 'Noah Clark', 'Australia', '2003-04-05', 'male', 'archer', NOW(), NOW()),
-(12, 'archer6@email.com', 'archer6@email.com', 'Mia Lewis', 'Australia', '1997-12-28', 'female', 'archer', NOW(), NOW()),
-(13, 'archer7@email.com', 'archer7@email.com', 'William Lee', 'Australia', '2001-07-14', 'male', 'archer', NOW(), NOW()),
-(14, 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', NOW(), NOW()),
-(15, 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', NOW(), NOW()),
-(16, 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', NOW(), NOW());
+('archer1@email.com', 'archer1@email.com', 'Oliver Brown', 'Australia', '2000-06-15', 'male', 'archer', NOW(), NOW()),
+( 'archer2@email.com', 'archer2@email.com', 'Sophie Taylor', 'Australia', '1998-03-22', 'female', 'archer', NOW(), NOW()),
+( 'archer3@email.com', 'archer3@email.com', 'Liam Harris', 'Australia', '2002-11-30', 'male', 'archer', NOW(), NOW()),
+( 'archer4@email.com', 'archer4@email.com', 'Isabella White', 'Australia', '1995-08-17', 'female', 'archer', NOW(), NOW()),
+( 'archer5@email.com', 'archer5@email.com', 'Noah Clark', 'Australia', '2003-04-05', 'male', 'archer', NOW(), NOW()),
+( 'archer6@email.com', 'archer6@email.com', 'Mia Lewis', 'Australia', '1997-12-28', 'female', 'archer', NOW(), NOW()),
+( 'archer7@email.com', 'archer7@email.com', 'William Lee', 'Australia', '2001-07-14', 'male', 'archer', NOW(), NOW()),
+( 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', NOW(), NOW()),
+( 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', NOW(), NOW()),
+( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', NOW(), NOW());
 
 -- ============================================
 -- 2. ROLE-SPECIFIC TABLES
@@ -59,13 +59,13 @@ VALUES
 -- 3. EQUIPMENT
 -- ============================================
 
-INSERT INTO equipment (equipment_id, name, description)
+INSERT INTO equipment ( name, description)
 VALUES 
-(1, 'Recurve Bow', 'Olympic-style recurve bow, officially recognized by World Archery and Australian Archery Federation'),
-(2, 'Compound Bow', 'Modern compound bow with cams and pulleys for mechanical advantage'),
-(3, 'Barebow', 'Traditional bow without sights or stabilizers, shooting instinctively'),
-(4, 'Longbow', 'Traditional English longbow, straight-limbed design'),
-(5, 'Crossbow', 'Horizontal bow mounted on a stock, used in specialized competitions');
+( 'Recurve Bow', 'Olympic-style recurve bow, officially recognized by World Archery and Australian Archery Federation'),
+( 'Compound Bow', 'Modern compound bow with cams and pulleys for mechanical advantage'),
+( 'Barebow', 'Traditional bow without sights or stabilizers, shooting instinctively'),
+( 'Longbow', 'Traditional English longbow, straight-limbed design'),
+( 'Crossbow', 'Horizontal bow mounted on a stock, used in specialized competitions');
 
 -- ============================================
 -- 4. ARCHERS (with equipment)
@@ -87,30 +87,17 @@ VALUES
 (15, 3, NULL, 'beginner (< 1 year of expereince)', 'New to barebow, learning traditional techniques'),
 (16, 2, NULL, 'professional (>= 10 year of experience)', 'Professional compound archer with national titles');
 
--- Add archers as recorders too (to satisfy FK constraints for request_competition_form)
-INSERT INTO recorder (recorder_id, year_of_experience, about_recorder)
-VALUES 
-(7, 2, 'Archer who also helps with recording at local competitions'),
-(8, 3, 'Experienced archer who volunteers as recorder'),
-(9, 1, 'Beginner learning both archery and recording'),
-(10, 5, 'Advanced archer with recording certification'),
-(11, 1, 'Barebow archer interested in recording'),
-(12, 2, 'Recurve archer who records occasionally'),
-(13, 3, 'Compound archer and certified recorder'),
-(14, 6, 'Advanced archer and experienced recorder'),
-(15, 1, 'New archer learning to record'),
-(16, 8, 'Professional archer with extensive recording experience');
 
 -- ============================================
 -- 5. CLUBS
 -- ============================================
 
-INSERT INTO club (club_id, name, creator_id, min_age_to_join, max_age_to_join, open_to_join, formation_date, about_club, club_logo_url)
+INSERT INTO club ( name, creator_id, min_age_to_join, max_age_to_join, open_to_join, formation_date, about_club, club_logo_url)
 VALUES 
-(1, 'Sydney Archery Club', 7, 12, 70, true, '2010-03-15', 'Premier archery club in Sydney offering training for all skill levels. We have indoor and outdoor ranges.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/sydney_club.jpg'),
-(2, 'Melbourne Arrows', 10, 10, 75, true, '2008-06-20', 'Friendly community club focused on outdoor target archery and field archery.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/melbourne_club.jpg'),
-(3, 'Brisbane Bowmen', 14, 15, 65, true, '2015-09-10', 'Competitive club with strong junior development program.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/brisbane_club.jpg'),
-(4, 'Perth Precision Archers', 16, 18, 70, false, '2012-11-05', 'Elite club for advanced archers. Membership by application only.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/perth_club.jpg');
+('Sydney Archery Club', 7, 12, 70, true, '2010-03-15', 'Premier archery club in Sydney offering training for all skill levels. We have indoor and outdoor ranges.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/sydney_club.jpg'),
+('Melbourne Arrows', 10, 10, 75, true, '2008-06-20', 'Friendly community club focused on outdoor target archery and field archery.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/melbourne_club.jpg'),
+('Brisbane Bowmen', 14, 15, 65, true, '2015-09-10', 'Competitive club with strong junior development program.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/brisbane_club.jpg'),
+('Perth Precision Archers', 16, 18, 70, false, '2012-11-05', 'Elite club for advanced archers. Membership by application only.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/perth_club.jpg');
 
 -- Update archers with club memberships
 UPDATE archer SET club_id = 1 WHERE archer_id IN (7, 8, 9);
@@ -122,89 +109,89 @@ UPDATE archer SET club_id = 4 WHERE archer_id IN (15, 16);
 -- 6. DISCIPLINES
 -- ============================================
 
-INSERT INTO discipline (discipline_id, name, description)
+INSERT INTO discipline ( name, description)
 VALUES 
-(1, 'Outdoor Target Archery', 'Shooting at fixed stationary targets outdoors at known distances. Standard World Archery format.'),
-(2, 'Indoor Target Archery', 'Precision shooting indoors at 18m or 25m distances with smaller target faces.'),
-(3, 'Field Archery', 'Moving through natural terrain courses with targets at various distances and angles.'),
-(4, 'Clout Archery', 'Long-distance discipline shooting at ground targets with concentric scoring zones.'),
-(5, 'Para-Archery', 'Archery for athletes with disabilities, with classifications and allowed adaptations.');
+('Outdoor Target Archery', 'Shooting at fixed stationary targets outdoors at known distances. Standard World Archery format.'),
+( 'Indoor Target Archery', 'Precision shooting indoors at 18m or 25m distances with smaller target faces.'),
+('Field Archery', 'Moving through natural terrain courses with targets at various distances and angles.'),
+('Clout Archery', 'Long-distance discipline shooting at ground targets with concentric scoring zones.'),
+('Para-Archery', 'Archery for athletes with disabilities, with classifications and allowed adaptations.');
 
 -- ============================================
 -- 7. AGE DIVISIONS
 -- ============================================
 
-INSERT INTO age_division (age_division_id, min_age, max_age)
+INSERT INTO age_division (min_age, max_age)
 VALUES 
-(1, 10, 14),  -- Cub
-(2, 15, 17),  -- Junior
-(3, 18, 20),  -- Youth
-(4, 21, 49),  -- Adult
-(5, 50, 59),  -- Master
-(6, 60, 70);  -- Senior Master
+( 10, 14),  -- Cub
+( 15, 17),  -- Junior
+( 18, 20),  -- Youth
+( 21, 49),  -- Adult
+( 50, 59),  -- Master
+( 60, 70);  -- Senior Master
 
 -- ============================================
 -- 8. CATEGORIES (Discipline + Age + Equipment)
 -- ============================================
 
-INSERT INTO category (category_id, discipline_id, age_division_id, equipment_id)
+INSERT INTO category (discipline_id, age_division_id, equipment_id)
 VALUES 
 -- Outdoor Target - All ages - Recurve
-(1, 1, 1, 1),
-(2, 1, 2, 1),
-(3, 1, 3, 1),
-(4, 1, 4, 1),
+( 1, 1, 1),
+( 1, 2, 1),
+( 1, 3, 1),
+( 1, 4, 1),
 -- Outdoor Target - All ages - Compound
-(5, 1, 1, 2),
-(6, 1, 2, 2),
-(7, 1, 3, 2),
-(8, 1, 4, 2),
+( 1, 1, 2),
+( 1, 2, 2),
+( 1, 3, 2),
+( 1, 4, 2),
 -- Indoor Target - Adults - Recurve
-(9, 2, 4, 1),
+( 2, 4, 1),
 -- Indoor Target - Adults - Compound
-(10, 2, 4, 2),
+(2, 4, 2),
 -- Field Archery - Adults - Barebow
-(11, 3, 4, 3),
+( 3, 4, 3),
 -- Outdoor Target - Adults - Barebow
-(12, 1, 4, 3);
+( 1, 4, 3);
 
 -- ============================================
 -- 9. TARGET FACES
 -- ============================================
 
-INSERT INTO target_face (target_face_id, diameter, unit_of_length)
+INSERT INTO target_face ( diameter, unit_of_length)
 VALUES 
-(1, 122, 'cm'),  -- Standard 122cm outdoor target
-(2, 80, 'cm'),   -- 80cm outdoor target
-(3, 40, 'cm'),   -- 40cm indoor target
-(4, 60, 'cm');   -- 60cm target
+( 122, 'cm'),  -- Standard 122cm outdoor target
+( 80, 'cm'),   -- 80cm outdoor target
+( 40, 'cm'),   -- 40cm indoor target
+( 60, 'cm');   -- 60cm target
 
 -- ============================================
 -- 10. RANGES
 -- ============================================
 
-INSERT INTO range (range_id, target_face_id, distance, unit_of_length)
+INSERT INTO range (target_face_id, distance, unit_of_length)
 VALUES 
-(1, 1, 70, 'm'),   -- 70m Olympic distance
-(2, 1, 50, 'm'),   -- 50m distance
-(3, 2, 30, 'm'),   -- 30m distance
-(4, 3, 18, 'm'),   -- 18m indoor
-(5, 1, 90, 'm'),   -- 90m long distance
-(6, 4, 25, 'm');   -- 25m indoor
+(1, 70, 'm'),   -- 70m Olympic distance
+( 1, 50, 'm'),   -- 50m distance
+( 2, 30, 'm'),   -- 30m distance
+( 3, 18, 'm'),   -- 18m indoor
+( 1, 90, 'm'),   -- 90m long distance
+( 4, 25, 'm');   -- 25m indoor
 
 -- ============================================
 -- 11. ROUNDS
 -- ============================================
 
-INSERT INTO round (round_id, name, category_id)
+INSERT INTO round (name, category_id)
 VALUES 
-(1, 'Olympic Round - Adult Recurve', 4),
-(2, 'Olympic Round - Youth Recurve', 3),
-(3, 'Compound 70m Round', 8),
-(4, 'Indoor 18m Round - Recurve', 9),
-(5, 'Indoor 18m Round - Compound', 10),
-(6, 'Field Round - Barebow', 11),
-(7, 'Barebow 50m Round', 12);
+( 'Olympic Round - Adult Recurve', 4),
+( 'Olympic Round - Youth Recurve', 3),
+( 'Compound 70m Round', 8),
+( 'Indoor 18m Round - Recurve', 9),
+( 'Indoor 18m Round - Compound', 10),
+( 'Field Round - Barebow', 11),
+( 'Barebow 50m Round', 12);
 
 -- ============================================
 -- 12. EQUIVALENT ROUNDS
@@ -238,22 +225,22 @@ VALUES
 -- 14. YEARLY CLUB CHAMPIONSHIPS
 -- ============================================
 
-INSERT INTO yearly_club_championship (yearly_club_championship_id, name, year, creator_id, eligible_group_of_club_id)
+INSERT INTO yearly_club_championship ( name, year, creator_id, eligible_group_of_club_id)
 VALUES 
-(1, 'Australian National Championship 2025', 2025, 4, 2),
-(2, 'Sydney Regional Championship 2025', 2025, 5, 1);
+('Australian National Championship 2025', 2025, 4, 2),
+('Sydney Regional Championship 2025', 2025, 5, 1);
 
 -- ============================================
 -- 15. CLUB COMPETITIONS
 -- ============================================
 
-INSERT INTO club_competition (club_competition_id, name, address, date_start, date_end, creator_id, eligible_group_of_club_id)
+INSERT INTO club_competition ( name, address, date_start, date_end, creator_id, eligible_group_of_club_id)
 VALUES 
-(1, 'Summer Open Tournament', '123 Archery Lane, Sydney NSW 2000', '2025-01-15', '2025-01-17', 4, 2),
-(2, 'Indoor Championship Round 1', '456 Sports Complex, Melbourne VIC 3000', '2025-02-20', '2025-02-20', 5, 2),
-(3, 'Sydney Local Cup', '789 Range Road, Sydney NSW 2010', '2025-03-10', '2025-03-11', 6, 1),
-(4, 'National Qualifier Stage 1', '321 Olympic Drive, Brisbane QLD 4000', '2025-04-05', '2025-04-07', 4, 2),
-(5, 'Spring Field Archery Meet', '555 Forest Path, Perth WA 6000', '2025-05-12', '2025-05-13', 5, 3);
+('Summer Open Tournament', '123 Archery Lane, Sydney NSW 2000', '2025-01-15', '2025-01-17', 4, 2),
+( 'Indoor Championship Round 1', '456 Sports Complex, Melbourne VIC 3000', '2025-02-20', '2025-02-20', 5, 2),
+('Sydney Local Cup', '789 Range Road, Sydney NSW 2010', '2025-03-10', '2025-03-11', 6, 1),
+('National Qualifier Stage 1', '321 Olympic Drive, Brisbane QLD 4000', '2025-04-05', '2025-04-07', 4, 2),
+('Spring Field Archery Meet', '555 Forest Path, Perth WA 6000', '2025-05-12', '2025-05-13', 5, 3);
 
 -- ============================================
 -- 16. EVENT CONTEXTS
@@ -488,7 +475,6 @@ VALUES
 (1, 8, 12, 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/Reports/evidence_001.pdf', 15, 'pending', 1, '2025-01-18 14:30:00+00', '2025-01-18 14:30:00+00'),
 (2, 10, 14, NULL, 9, 'ineligible', 1, '2025-01-10 09:00:00+00', '2025-01-12 16:00:00+00');
 
--- Note: report_content appears to be INT type in schema but should likely be TEXT. Using placeholder values.
 
 -- ============================================
 -- 26. ADDITIONAL PARTICIPATING RECORDS (Practice)

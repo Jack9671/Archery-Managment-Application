@@ -540,9 +540,7 @@ ALTER TABLE "archer" ADD FOREIGN KEY ("club_id") REFERENCES "club" ("club_id") O
 
 ALTER TABLE "club" ADD CONSTRAINT "each_archer_can_create_more_than_one_club" FOREIGN KEY ("creator_id") REFERENCES "archer" ("archer_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "request_competition_form" ADD CONSTRAINT "want_to_participate" FOREIGN KEY ("sender_id") REFERENCES "archer" ("archer_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "request_competition_form" ADD CONSTRAINT "want_to_be_member_of_that_competition_to_record" FOREIGN KEY ("sender_id") REFERENCES "recorder" ("recorder_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "request_competition_form" ADD FOREIGN KEY ("sender_id") REFERENCES "account" ("account_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "request_competition_form" ADD FOREIGN KEY ("club_competition_id") REFERENCES "club_competition" ("club_competition_id") ON DELETE CASCADE ON UPDATE CASCADE;
 

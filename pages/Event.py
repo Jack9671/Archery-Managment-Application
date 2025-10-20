@@ -8,8 +8,9 @@ from utility_function.event_utility import (
     get_all_events, get_event_hierarchy, get_eligible_clubs,
     get_request_forms, update_form_status, get_round_schedule,
     create_yearly_championship, create_club_competition,
-    get_available_rounds, get_available_ranges
+    get_available_rounds, create_complete_event
 )
+import utility_function.event_utility as event_utility
 
 # Check if user is logged in
 if not st.session_state.get('logged_in', False):
@@ -453,78 +454,354 @@ if user_role == 'recorder':
         
         with management_tab1:
             st.subheader("Create New Event")
+            st.info("📋 This wizard will guide you through creating a complete event with all its components")
             
-            event_creation_type = st.radio("What would you like to create?", 
-                                         ["Yearly Club Championship", "Club Competition"])
+            # Initialize event builder state
+            if 'event_builder_step' not in st.session_state:
+                st.session_state.event_builder_step = 1
+                st.session_state.event_builder_data = {}
             
-            if event_creation_type == "Yearly Club Championship":
-                with st.form("create_championship"):
-                    st.write("**Yearly Club Championship Details**")
-                    
-                    championship_name = st.text_input("Championship Name*")
-                    year = st.number_input("Year*", min_value=2020, max_value=2100, value=datetime.now().year)
+            # Step indicator
+            steps = ["Event Type", "Basic Info", "Competitions", "Rounds", "Ranges & Ends", "Review & Create"]
+            current_step = st.session_state.event_builder_step
+            
+            # Progress bar
+            st.progress(current_step / len(steps))
+            st.write(f"**Step {current_step}/{len(steps)}:** {steps[current_step - 1]}")
+            
+            # STEP 1: Choose Event Type
+            if current_step == 1:
+                event_type = st.radio("What would you like to create?*", 
+                                     ["Yearly Club Championship", "Club Competition"],
+                                     key="event_type_selection")
+                
+                col1, col2 = st.columns([1, 1])
+                with col2:
+                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                        st.session_state.event_builder_data['event_type'] = event_type
+                        st.session_state.event_builder_step = 2
+                        st.rerun()
+            
+            # STEP 2: Basic Information
+            elif current_step == 2:
+                event_type = st.session_state.event_builder_data.get('event_type')
+                st.write(f"**Creating:** {event_type}")
+                
+                if event_type == "Yearly Club Championship":
+                    championship_name = st.text_input("Championship Name*", 
+                                                     value=st.session_state.event_builder_data.get('name', ''))
+                    year = st.number_input("Year*", min_value=2020, max_value=2100, 
+                                          value=st.session_state.event_builder_data.get('year', datetime.now().year))
                     eligible_group_id = st.text_input("Eligible Group ID (Optional)", 
+                                                     value=st.session_state.event_builder_data.get('eligible_group_id', ''),
                                                      help="Leave empty if all clubs are eligible")
                     
-                    submit_championship = st.form_submit_button("🏆 Create Championship", type="primary")
-                    
-                    if submit_championship:
-                        if not championship_name:
-                            st.error("Championship name is required!")
-                        else:
-                            result = create_yearly_championship(
-                                creator_id=st.session_state.user_id,
-                                year=year,
-                                championship_name=championship_name,
-                                eligible_group_id=int(eligible_group_id) if eligible_group_id else None
-                            )
-                            
-                            if result:
-                                st.success(f"✅ Championship created successfully! ID: {result['yearly_club_championship_id']}")
-                                st.balloons()
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("⬅️ Back"):
+                            st.session_state.event_builder_step = 1
+                            st.rerun()
+                    with col2:
+                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                            if not championship_name:
+                                st.error("Championship name is required!")
                             else:
-                                st.error("Failed to create championship.")
-            
-            else:  # Club Competition
-                with st.form("create_competition"):
-                    st.write("**Club Competition Details**")
-                    
-                    competition_name = st.text_input("Competition Name*")
-                    address = st.text_input("Address*", placeholder="e.g., 123 Archery Lane, Sydney NSW 2000")
+                                st.session_state.event_builder_data['name'] = championship_name
+                                st.session_state.event_builder_data['year'] = year
+                                st.session_state.event_builder_data['eligible_group_id'] = eligible_group_id if eligible_group_id else None
+                                st.session_state.event_builder_step = 3
+                                st.rerun()
+                
+                else:  # Club Competition
+                    competition_name = st.text_input("Competition Name*",
+                                                    value=st.session_state.event_builder_data.get('name', ''))
+                    address = st.text_input("Address*", 
+                                          value=st.session_state.event_builder_data.get('address', ''),
+                                          placeholder="e.g., 123 Archery Lane, Sydney NSW 2000")
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        date_start = st.date_input("Start Date*", value=date.today())
+                        date_start = st.date_input("Start Date*", 
+                                                  value=st.session_state.event_builder_data.get('date_start', date.today()))
                     with col2:
-                        date_end = st.date_input("End Date*", value=date.today())
+                        date_end = st.date_input("End Date*",
+                                                value=st.session_state.event_builder_data.get('date_end', date.today()))
                     
                     eligible_group_id = st.text_input("Eligible Group ID (Optional)",
+                                                     value=st.session_state.event_builder_data.get('eligible_group_id', ''),
                                                      help="Leave empty if all clubs are eligible")
                     
-                    submit_competition = st.form_submit_button("🎯 Create Competition", type="primary")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("⬅️ Back"):
+                            st.session_state.event_builder_step = 1
+                            st.rerun()
+                    with col2:
+                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                            if not competition_name or not address:
+                                st.error("Competition name and address are required!")
+                            elif date_end < date_start:
+                                st.error("End date must be after start date!")
+                            else:
+                                st.session_state.event_builder_data['name'] = competition_name
+                                st.session_state.event_builder_data['address'] = address
+                                st.session_state.event_builder_data['date_start'] = date_start
+                                st.session_state.event_builder_data['date_end'] = date_end
+                                st.session_state.event_builder_data['eligible_group_id'] = eligible_group_id if eligible_group_id else None
+                                st.session_state.event_builder_step = 3
+                                st.rerun()
+            
+            # STEP 3: Add Competitions (only for Championships)
+            elif current_step == 3:
+                event_type = st.session_state.event_builder_data.get('event_type')
+                
+                if event_type == "Yearly Club Championship":
+                    st.write("**Add Club Competitions to Championship**")
+                    st.info("ℹ️ All competitions must have the same rounds and participants for consistency")
                     
-                    if submit_competition:
-                        if not competition_name:
-                            st.error("Competition name is required!")
-                        elif not address:
-                            st.error("Address is required!")
-                        elif date_end < date_start:
-                            st.error("End date must be after start date!")
+                    # Initialize competitions list
+                    if 'competitions' not in st.session_state.event_builder_data:
+                        st.session_state.event_builder_data['competitions'] = []
+                    
+                    # Display existing competitions
+                    if st.session_state.event_builder_data['competitions']:
+                        st.write(f"**Added Competitions ({len(st.session_state.event_builder_data['competitions'])}):**")
+                        for idx, comp in enumerate(st.session_state.event_builder_data['competitions']):
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                st.write(f"{idx + 1}. {comp['name']} - {comp['address']}")
+                            with col2:
+                                if st.button("🗑️", key=f"del_comp_{idx}"):
+                                    st.session_state.event_builder_data['competitions'].pop(idx)
+                                    st.rerun()
+                    
+                    # Add new competition
+                    with st.expander("➕ Add New Competition", expanded=True):
+                        comp_name = st.text_input("Competition Name*", key="new_comp_name")
+                        comp_address = st.text_input("Address*", key="new_comp_address")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            comp_start = st.date_input("Start Date*", value=date.today(), key="new_comp_start")
+                        with col2:
+                            comp_end = st.date_input("End Date*", value=date.today(), key="new_comp_end")
+                        
+                        if st.button("➕ Add Competition"):
+                            if comp_name and comp_address:
+                                st.session_state.event_builder_data['competitions'].append({
+                                    'name': comp_name,
+                                    'address': comp_address,
+                                    'date_start': comp_start,
+                                    'date_end': comp_end
+                                })
+                                st.success(f"Added {comp_name}")
+                                st.rerun()
+                            else:
+                                st.error("Please fill all fields!")
+                    
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("⬅️ Back"):
+                            st.session_state.event_builder_step = 2
+                            st.rerun()
+                    with col2:
+                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                            if not st.session_state.event_builder_data['competitions']:
+                                st.error("Please add at least one competition!")
+                            else:
+                                st.session_state.event_builder_step = 4
+                                st.rerun()
+                else:
+                    # Skip to next step for standalone competitions
+                    st.session_state.event_builder_step = 4
+                    st.rerun()
+            
+            # STEP 4: Add Rounds
+            elif current_step == 4:
+                st.write("**Add Rounds**")
+                st.info("ℹ️ Select existing rounds from the database")
+                
+                # Get available rounds
+                rounds_response = supabase.table("round").select("round_id, name, category_id").execute()
+                
+                if 'rounds' not in st.session_state.event_builder_data:
+                    st.session_state.event_builder_data['rounds'] = []
+                
+                # Display added rounds
+                if st.session_state.event_builder_data['rounds']:
+                    st.write(f"**Selected Rounds ({len(st.session_state.event_builder_data['rounds'])}):**")
+                    for idx, round_id in enumerate(st.session_state.event_builder_data['rounds']):
+                        round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
+                        if round_info:
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                st.write(f"{idx + 1}. {round_info['name']} (ID: {round_id})")
+                            with col2:
+                                if st.button("🗑️", key=f"del_round_{idx}"):
+                                    st.session_state.event_builder_data['rounds'].pop(idx)
+                                    st.rerun()
+                
+                # Add round selector
+                if rounds_response.data:
+                    round_options = {f"{r['name']} (ID: {r['round_id']})": r['round_id'] for r in rounds_response.data}
+                    selected_round = st.selectbox("Select Round to Add", [""] + list(round_options.keys()))
+                    
+                    if st.button("➕ Add Round") and selected_round:
+                        round_id = round_options[selected_round]
+                        if round_id not in st.session_state.event_builder_data['rounds']:
+                            st.session_state.event_builder_data['rounds'].append(round_id)
+                            st.success(f"Added {selected_round}")
+                            st.rerun()
                         else:
-                            result = create_club_competition(
+                            st.warning("Round already added!")
+                
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("⬅️ Back"):
+                        st.session_state.event_builder_step = 3 if st.session_state.event_builder_data.get('event_type') == "Yearly Club Championship" else 2
+                        st.rerun()
+                with col2:
+                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                        if not st.session_state.event_builder_data['rounds']:
+                            st.error("Please add at least one round!")
+                        else:
+                            st.session_state.event_builder_step = 5
+                            st.rerun()
+            
+            # STEP 5: Add Ranges and Ends
+            elif current_step == 5:
+                st.write("**Configure Ranges and Ends**")
+                st.info("ℹ️ For each round, specify ranges and number of ends per range")
+                
+                # Initialize ranges_config
+                if 'ranges_config' not in st.session_state.event_builder_data:
+                    st.session_state.event_builder_data['ranges_config'] = {}
+                
+                # Get available ranges
+                ranges_response = supabase.table("range").select("*").execute()
+                rounds_response = supabase.table("round").select("*").execute()
+                
+                for round_id in st.session_state.event_builder_data['rounds']:
+                    round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
+                    round_name = round_info['name'] if round_info else f"Round {round_id}"
+                    
+                    with st.expander(f"🎯 {round_name}", expanded=True):
+                        if round_id not in st.session_state.event_builder_data['ranges_config']:
+                            st.session_state.event_builder_data['ranges_config'][round_id] = []
+                        
+                        # Display configured ranges
+                        if st.session_state.event_builder_data['ranges_config'][round_id]:
+                            for idx, range_config in enumerate(st.session_state.event_builder_data['ranges_config'][round_id]):
+                                col1, col2, col3 = st.columns([2, 2, 1])
+                                with col1:
+                                    st.write(f"Range ID: {range_config['range_id']}")
+                                with col2:
+                                    st.write(f"Number of Ends: {range_config['num_ends']}")
+                                with col3:
+                                    if st.button("🗑️", key=f"del_range_{round_id}_{idx}"):
+                                        st.session_state.event_builder_data['ranges_config'][round_id].pop(idx)
+                                        st.rerun()
+                        
+                        # Add new range
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        with col1:
+                            if ranges_response.data:
+                                range_options = {f"Range {r['range_id']} ({r['distance']}{r['unit_of_length']})": r['range_id'] 
+                                               for r in ranges_response.data}
+                                selected_range = st.selectbox("Select Range", [""] + list(range_options.keys()), 
+                                                            key=f"range_select_{round_id}")
+                        with col2:
+                            num_ends = st.number_input("Number of Ends*", min_value=1, max_value=20, value=6,
+                                                      key=f"num_ends_{round_id}")
+                        with col3:
+                            st.write("")
+                            st.write("")
+                            if st.button("➕", key=f"add_range_{round_id}") and selected_range:
+                                range_id = range_options[selected_range]
+                                st.session_state.event_builder_data['ranges_config'][round_id].append({
+                                    'range_id': range_id,
+                                    'num_ends': num_ends
+                                })
+                                st.rerun()
+                
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("⬅️ Back"):
+                        st.session_state.event_builder_step = 4
+                        st.rerun()
+                with col2:
+                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                        # Validate all rounds have ranges configured
+                        all_configured = all(st.session_state.event_builder_data['ranges_config'].get(r_id, []) 
+                                           for r_id in st.session_state.event_builder_data['rounds'])
+                        if not all_configured:
+                            st.error("Please configure ranges for all rounds!")
+                        else:
+                            st.session_state.event_builder_step = 6
+                            st.rerun()
+            
+            # STEP 6: Review and Create
+            elif current_step == 6:
+                st.write("**📋 Review Your Event Configuration**")
+                
+                data = st.session_state.event_builder_data
+                
+                st.write(f"**Event Type:** {data['event_type']}")
+                st.write(f"**Name:** {data['name']}")
+                
+                if data['event_type'] == "Yearly Club Championship":
+                    st.write(f"**Year:** {data['year']}")
+                    st.write(f"**Competitions:** {len(data['competitions'])}")
+                    for comp in data['competitions']:
+                        st.write(f"  - {comp['name']}")
+                else:
+                    st.write(f"**Address:** {data['address']}")
+                    st.write(f"**Dates:** {data['date_start']} to {data['date_end']}")
+                
+                st.write(f"**Rounds:** {len(data['rounds'])}")
+                st.write(f"**Total Range Configurations:** {sum(len(ranges) for ranges in data['ranges_config'].values())}")
+                
+                col1, col2, col3 = st.columns([1, 1, 1])
+                with col1:
+                    if st.button("⬅️ Back"):
+                        st.session_state.event_builder_step = 5
+                        st.rerun()
+                with col2:
+                    if st.button("🔄 Start Over", type="secondary", use_container_width=True):
+                        st.session_state.event_builder_step = 1
+                        st.session_state.event_builder_data = {}
+                        st.rerun()
+                with col3:
+                    if st.button("✅ Create Event", type="primary", use_container_width=True):
+                        with st.spinner("Creating event with all components..."):
+                            # Call the complete event creation function
+                            result = event_utility.create_complete_event(
                                 creator_id=st.session_state.user_id,
-                                competition_name=competition_name,
-                                address=address,
-                                date_start=date_start.isoformat(),
-                                date_end=date_end.isoformat(),
-                                eligible_group_id=int(eligible_group_id) if eligible_group_id else None
+                                event_data=st.session_state.event_builder_data
                             )
                             
-                            if result:
-                                st.success(f"✅ Competition created successfully! ID: {result['club_competition_id']}")
+                            if result['success']:
+                                st.success(f"✅ {result['message']}")
                                 st.balloons()
+                                
+                                # Show created IDs
+                                st.write("**Created IDs:**")
+                                if result['created_ids']['championship_id']:
+                                    st.write(f"- Championship ID: {result['created_ids']['championship_id']}")
+                                st.write(f"- Competition IDs: {', '.join(map(str, result['created_ids']['competition_ids']))}")
+                                st.write(f"- Event Context Records: {len(result['created_ids']['event_context_ids'])}")
+                                
+                                # Reset wizard after success
+                                st.info("Event created successfully! Resetting wizard...")
+                                st.session_state.event_builder_step = 1
+                                st.session_state.event_builder_data = {}
+                                
+                                # Wait a moment then refresh
+                                import time
+                                time.sleep(2)
+                                st.rerun()
                             else:
-                                st.error("Failed to create competition.")
+                                st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
+                                st.write("Please try again or contact an administrator.")
         
         with management_tab2:
             st.subheader("Modify Existing Event")

@@ -198,6 +198,178 @@ def get_available_rounds():
         print(f"Error fetching rounds: {e}")
         return pd.DataFrame()
 
+def create_complete_event(creator_id, event_data):
+    """
+    Create a complete event with all components atomically
+    
+    Args:
+        creator_id: ID of the user creating the event
+        event_data: Dictionary containing:
+            - event_type: "Yearly Club Championship" or "Club Competition"
+            - name: Event name
+            - year: Year (for championship)
+            - address: Address (for competition)
+            - date_start: Start date (for competition)
+            - date_end: End date (for competition)
+            - eligible_group_id: Optional eligible group ID
+            - competitions: List of competitions (for championship)
+            - rounds: List of round IDs
+            - ranges_config: Dict mapping round_id to list of {range_id, num_ends}
+    
+    Returns:
+        Dict with success status and created IDs, or error message
+    """
+    try:
+        created_ids = {
+            'championship_id': None,
+            'competition_ids': [],
+            'event_context_ids': []
+        }
+        
+        event_type = event_data.get('event_type')
+        
+        # STEP 1: Create Championship or Competition
+        if event_type == "Yearly Club Championship":
+            # Create yearly championship
+            championship_response = supabase.table("yearly_club_championship").insert({
+                "creator_id": creator_id,
+                "year": event_data['year'],
+                "name": event_data['name'],
+                "eligible_group_of_club_id": event_data.get('eligible_group_id')
+            }).execute()
+            
+            if not championship_response.data:
+                return {"success": False, "error": "Failed to create championship"}
+            
+            championship_id = championship_response.data[0]['yearly_club_championship_id']
+            created_ids['championship_id'] = championship_id
+            
+            # Create all competitions for this championship
+            competitions_to_create = event_data.get('competitions', [])
+            
+            for comp in competitions_to_create:
+                comp_response = supabase.table("club_competition").insert({
+                    "creator_id": creator_id,
+                    "name": comp['name'],
+                    "address": comp['address'],
+                    "date_start": comp['date_start'].isoformat() if hasattr(comp['date_start'], 'isoformat') else str(comp['date_start']),
+                    "date_end": comp['date_end'].isoformat() if hasattr(comp['date_end'], 'isoformat') else str(comp['date_end']),
+                    "eligible_group_of_club_id": event_data.get('eligible_group_id')
+                }).execute()
+                
+                if not comp_response.data:
+                    return {"success": False, "error": f"Failed to create competition: {comp['name']}"}
+                
+                comp_id = comp_response.data[0]['club_competition_id']
+                created_ids['competition_ids'].append(comp_id)
+                
+                # Create event_context records for this competition
+                context_ids = _create_event_contexts(championship_id, comp_id, 
+                                                     event_data['rounds'], 
+                                                     event_data['ranges_config'])
+                
+                if context_ids is None:
+                    return {"success": False, "error": f"Failed to create event contexts for competition: {comp['name']}"}
+                
+                created_ids['event_context_ids'].extend(context_ids)
+        
+        else:  # Club Competition
+            # Create standalone club competition
+            comp_response = supabase.table("club_competition").insert({
+                "creator_id": creator_id,
+                "name": event_data['name'],
+                "address": event_data['address'],
+                "date_start": event_data['date_start'].isoformat() if hasattr(event_data['date_start'], 'isoformat') else str(event_data['date_start']),
+                "date_end": event_data['date_end'].isoformat() if hasattr(event_data['date_end'], 'isoformat') else str(event_data['date_end']),
+                "eligible_group_of_club_id": event_data.get('eligible_group_id')
+            }).execute()
+            
+            if not comp_response.data:
+                return {"success": False, "error": "Failed to create competition"}
+            
+            comp_id = comp_response.data[0]['club_competition_id']
+            created_ids['competition_ids'].append(comp_id)
+            
+            # Create event_context records for this competition
+            context_ids = _create_event_contexts(None, comp_id, 
+                                                 event_data['rounds'], 
+                                                 event_data['ranges_config'])
+            
+            if context_ids is None:
+                return {"success": False, "error": "Failed to create event contexts"}
+            
+            created_ids['event_context_ids'].extend(context_ids)
+        
+        return {
+            "success": True,
+            "message": f"Successfully created {event_type}",
+            "created_ids": created_ids
+        }
+    
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error creating complete event: {e}")
+        print(f"Full traceback: {error_details}")
+        
+        # Extract more meaningful error message from Supabase errors
+        error_msg = str(e)
+        if hasattr(e, 'message'):
+            error_msg = e.message
+        elif isinstance(e, dict) and 'message' in e:
+            error_msg = e['message']
+            
+        return {"success": False, "error": error_msg}
+
+def _create_event_contexts(championship_id, competition_id, round_ids, ranges_config):
+    """
+    Helper function to create event_context records
+    
+    Args:
+        championship_id: ID of championship (or None for standalone competition)
+        competition_id: ID of competition
+        round_ids: List of round IDs
+        ranges_config: Dict mapping round_id to list of {range_id, num_ends}
+    
+    Returns:
+        List of created event_context_ids, or None on failure
+    """
+    try:
+        created_context_ids = []
+        
+        for round_id in round_ids:
+            range_configs = ranges_config.get(round_id, [])
+            
+            for range_config in range_configs:
+                range_id = range_config['range_id']
+                num_ends = range_config['num_ends']
+                
+                # Create event_context records for each end
+                for end_order in range(1, num_ends + 1):
+                    # Generate event_context_id in format: {comp_id}-{round_id}-{range_id}-{end_order}
+                    event_context_id = f"{competition_id}-{round_id}-{range_id}-{end_order}"
+                    
+                    context_response = supabase.table("event_context").insert({
+                        "event_context_id": event_context_id,
+                        "yearly_club_championship_id": championship_id,
+                        "club_competition_id": competition_id,
+                        "round_id": round_id,
+                        "range_id": range_id,
+                        "end_order": end_order
+                    }).execute()
+                    
+                    if not context_response.data:
+                        print(f"Failed to create event_context: {event_context_id}")
+                        return None
+                    
+                    created_context_ids.append(event_context_id)
+        
+        return created_context_ids
+    
+    except Exception as e:
+        print(f"Error creating event contexts: {e}")
+        return None
+
 def get_available_ranges():
     """Get all available ranges"""
     try:
