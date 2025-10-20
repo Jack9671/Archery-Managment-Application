@@ -339,7 +339,7 @@ CREATE TABLE "person_to_person_old_message_visibility" (
 CREATE TABLE "group_chat_history" (
   "group_id" int,
   "message_order" int,
-  "message" int NOT NULL,
+  "message" text NOT NULL,
   "writer_id" int NOT NULL,
   PRIMARY KEY ("group_id", "message_order")
 );
