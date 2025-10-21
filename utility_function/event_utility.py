@@ -1,7 +1,7 @@
 from utility_function.initilize_dbconnection import supabase
 import pandas as pd
 from datetime import datetime
-
+import streamlit as st
 def get_all_events(event_type="all", date_start=None, date_end=None, category_id=None, eligible_group_id=None):
     """Get filtered events (yearly championships or club competitions)"""
     try:
@@ -144,15 +144,22 @@ def update_form_status(form_id, new_status):
 def get_round_schedule(club_competition_id):
     """Get round schedule for a club competition"""
     try:
+        # Convert to integer if it's a string
+        if isinstance(club_competition_id, str):
+            club_competition_id = int(club_competition_id)
+        
         response = supabase.table("round_schedule").select("*").eq("club_competition_id", club_competition_id).execute()
         
         if response.data:
             # Join with round table to get round names
             df = pd.DataFrame(response.data)
             for idx, row in df.iterrows():
-                round_info = supabase.table("round").select("round_name").eq("round_id", row['round_id']).execute()
+                # Query for 'name' column, not 'round_name'
+                round_info = supabase.table("round").select("name").eq("round_id", row['round_id']).execute()
                 if round_info.data:
-                    df.at[idx, 'round_name'] = round_info.data[0]['round_name']
+                    df.at[idx, 'round_name'] = round_info.data[0]['name']
+                else:
+                    df.at[idx, 'round_name'] = f"Round {row['round_id']}"
             return df
         return pd.DataFrame()
     except Exception as e:
@@ -197,6 +204,50 @@ def get_available_rounds():
     except Exception as e:
         print(f"Error fetching rounds: {e}")
         return pd.DataFrame()
+
+def _create_round_schedules(club_competition_id, round_ids, round_schedules):
+    """
+    Create round_schedule entries for a competition
+    
+    Args:
+        club_competition_id: ID of the club competition
+        round_ids: List of round IDs
+        round_schedules: Dict mapping round_id to schedule info {start_date, start_time, end_date, end_time}
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        from datetime import datetime
+        
+        for round_id in round_ids:
+            schedule_info = round_schedules.get(round_id)
+            if not schedule_info:
+                print(f"Warning: No schedule info for round {round_id}, skipping")
+                continue
+            
+            # Combine date and time into datetime
+            start_datetime = datetime.combine(schedule_info['start_date'], schedule_info['start_time'])
+            end_datetime = datetime.combine(schedule_info['end_date'], schedule_info['end_time'])
+            
+            # Insert round_schedule
+            response = supabase.table("round_schedule").insert({
+                "club_competition_id": club_competition_id,
+                "round_id": round_id,
+                "datetime_to_start": start_datetime.isoformat(),
+                "expected_datetime_to_end": end_datetime.isoformat()
+            }).execute()
+            
+            if not response.data:
+                print(f"Failed to create schedule for round {round_id}")
+                return False
+        
+        return True
+    except Exception as e:
+        print(f"Error creating round schedules: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def create_complete_event(creator_id, event_data):
     """
@@ -272,6 +323,12 @@ def create_complete_event(creator_id, event_data):
                     return {"success": False, "error": f"Failed to create event contexts for competition: {comp['name']}"}
                 
                 created_ids['event_context_ids'].extend(context_ids)
+                
+                # Create round_schedule entries for this competition
+                schedule_success = _create_round_schedules(comp_id, event_data['rounds'], 
+                                                          event_data.get('round_schedules', {}))
+                if not schedule_success:
+                    return {"success": False, "error": f"Failed to create round schedules for competition: {comp['name']}"}
         
         else:  # Club Competition
             # Create standalone club competition
@@ -299,6 +356,12 @@ def create_complete_event(creator_id, event_data):
                 return {"success": False, "error": "Failed to create event contexts"}
             
             created_ids['event_context_ids'].extend(context_ids)
+            
+            # Create round_schedule entries for this competition
+            schedule_success = _create_round_schedules(comp_id, event_data['rounds'], 
+                                                      event_data.get('round_schedules', {}))
+            if not schedule_success:
+                return {"success": False, "error": "Failed to create round schedules"}
         
         return {
             "success": True,
@@ -484,4 +547,84 @@ def get_all_eligible_groups():
     
     except Exception as e:
         print(f"Error fetching eligible groups: {e}")
+        return []
+
+def get_club_competition_map():
+    data = supabase.table("club_competition").select("club_competition_id, name").execute().data
+    return {c["name"]: c["club_competition_id"] for c in data}
+def get_yearly_club_championship_map():
+    data = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name").execute().data
+    return {c["name"]: c["yearly_club_championship_id"] for c in data}
+def get_round_map():
+    data = supabase.table("round").select("round_id, name").execute().data
+    return {c["name"]: c["round_id"] for c in data}
+
+def get_range_map():
+    data = supabase.table("range").select("range_id, distance").execute().data
+    return { c["range_id"] : str(c["distance"]) for c in data}
+
+def get_discipline_map():
+    data = supabase.table("discipline").select("discipline_id, name").execute().data
+    return { c["discipline_id"] : c["name"] for c in data}
+def get_equipment_map():
+    data = supabase.table("equipment").select("equipment_id, name").execute().data
+    return { c["equipment_id"] : c["name"] for c in data}
+def get_age_division_map():
+    # age_division table does not have name, just min_age and max_age, so we need to create a name like "18-25"
+    data = supabase.table("age_division").select("age_division_id, min_age, max_age").execute().data
+    return {c["age_division_id"] : f"{c['min_age']}-{c['max_age']}" for c in data}
+
+def get_category_map():
+    #category table does not have name, just discipline_id, age_division_id, equipment_id, so we need to create a name like "Outdoor Target Archery · 18-25 · Longbow"
+    discipline_map = get_discipline_map()
+    age_division_map = get_age_division_map()
+    equipment_map = get_equipment_map()
+
+    category_map = {}
+    for c in supabase.table("category").select("category_id, discipline_id, age_division_id, equipment_id").execute().data:
+        name = f"{discipline_map.get(c['discipline_id'], 'Unknown Discipline')} · {age_division_map.get(c['age_division_id'], 'Unknown Age Division')} · {equipment_map.get(c['equipment_id'], 'Unknown Equipment')}"
+        category_map[c["category_id"]] = name
+    return category_map
+
+def get_club_map():
+    data = supabase.table("club").select("club_id, name").execute().data
+    return {c["club_id"]: c["name"] for c in data}
+
+def get_list_of_eligible_group_id_from_a_set_of_club_id(club_ids:set) -> list:
+    """Given a set of club IDs, find an eligible group id that contain these clubs as subset"""
+    try:
+        response = supabase.table("eligible_club_member").select("eligible_group_of_club_id, eligible_club_id").in_("eligible_club_id", club_ids).execute() 
+        if not response.data:
+            return []
+        #response.data is a list of dicts with eligible_group_of_club_id and eligible_club_id where eligible_club_id is in club_ids
+        group_to_clubs = {}
+        for row in response.data:
+            group_id = row["eligible_group_of_club_id"]
+            club_id = row["eligible_club_id"]
+            if group_id not in group_to_clubs:
+                group_to_clubs[group_id] = set()
+            group_to_clubs[group_id].add(club_id)
+        matching_group_ids = []
+        for group_id, member_clubs in group_to_clubs.items():
+            if club_ids.issubset(member_clubs):
+                matching_group_ids.append(group_id)
+        return matching_group_ids
+    except Exception as e:
+        print(f"Error fetching eligible groups: {e}")
+        return []   
+
+def get_list_of_member_club_name_from_eligible_group_of_club_id(eligible_group_of_club_id):
+    """Given an eligible_group_of_club_id, return the list of member club names"""
+    try:
+        response = supabase.table("eligible_club_member").select("eligible_club_id").eq("eligible_group_of_club_id", eligible_group_of_club_id).execute() 
+        if not response.data:
+            return []
+        club_ids = [row["eligible_club_id"] for row in response.data]
+        clubs_response = supabase.table("club").select("name").in_("club_id", club_ids).execute()
+        if not clubs_response.data:
+            return []
+        club_names = [row["name"] for row in clubs_response.data]
+        return club_names
+    except Exception as e:
+        print(f"Error fetching member clubs: {e}")
         return []
