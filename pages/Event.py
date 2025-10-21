@@ -234,7 +234,7 @@ with tab_enroll:
     # Tab 2.1: Submit Form
     st.subheader("📝 Submit Request Form")
     #note
-    st.write("""⚠️ **Note:** If you fill in an id for a yearly club championship, leave club competition id empty. 
+    st.warning("""⚠️ **Instruction:** If you fill in an id for a yearly club championship, leave club competition id empty. 
     You can only fill in club competition id that does not belong to any yearly championship and still skip yearly championship id.
     Then if you are recorders, you do not need to fill in round id, as you will be responsible for the whole club competition if the club competition does not belong to any yearly championship; in that case, leave the yearly club championship id empty and fill in the club competition id. If the club competition belongs to a yearly championship, then you are responsible for all club competitions that make up the yearly club championship, so there is no need to fill in club competition id — the yearly club championship id is sufficient.
     If you are archers, you must fill in round id, as you are only participating in a specific round as competitors. If you choose to participate in a round in a club competition that does not belong to any yearly championship, you must fill in the club competition id and round id only. If you want to participate in a round in a club competition that belongs to a yearly championship, you only need to fill in the yearly club championship id and round id as you must participate in the same round in all club competitions that make up the yearly club championship; doing so makes calculating scores easier.""")
@@ -257,8 +257,14 @@ with tab_enroll:
             form_action = st.selectbox("Action*", ["", "enrol", "withdraw"])
         
         with col2:
-            yearly_championship_id = st.text_input("Yearly Championship ID (Optional)", placeholder="Leave empty if not applicable")
-            club_competition_id = st.text_input("Club Competition ID", placeholder="Required for specific competitions")
+            apply_for_option = st.radio("Apply For*", ["Yearly Championship", "Club Competition"])
+            if apply_for_option == "Yearly Championship":
+                yearly_championship_id = st.text_input("Yearly Championship ID*", placeholder="Enter Yearly Championship ID")
+                club_competition_id = ""
+            else:
+                club_competition_id = st.text_input("Club Competition ID*", placeholder="Enter Club Competition ID")
+                yearly_championship_id = ""
+
         
         if form_type == "participating":
             round_id = st.text_input("Round ID*", placeholder="Required for participating")
