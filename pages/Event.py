@@ -366,8 +366,10 @@ with tab_schedule:
     st.header("📅 Event Schedule")
     st.write("View round schedules in Gantt chart format")
     
-    competition_id_input = st.text_input("Enter Club Competition ID", placeholder="e.g., 1")
-    
+    club_competition_map = event_utility.get_club_competition_map()
+    club_competition_name = st.selectbox("Select club competition", list(club_competition_map.keys()))
+    competition_id_input = club_competition_map[club_competition_name]
+
     if st.button("🔍 View Schedule", type="primary"):
         if competition_id_input:
             schedule_df = event_utility.get_round_schedule(competition_id_input)
@@ -394,7 +396,7 @@ with tab_schedule:
                         group_tasks=True,
                         showgrid_x=True,
                         showgrid_y=True,
-                        title=f'Round Schedule for Competition {competition_id_input}'
+                        title=f'Round Schedule for {club_competition_name}'
                     )
                     
                     # Add "Today" line
