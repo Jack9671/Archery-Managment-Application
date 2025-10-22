@@ -480,6 +480,85 @@ with tab_schedule:
         else:
             st.error("Please enter a competition ID.")
 
+# Tab 4 (or 7 for recorder): Event Timeline
+with tab_timeline:
+    st.header("📆 Event Timeline")
+    st.write("View history and upcoming events")
+    
+    # Section 1: Choose History or Upcoming
+    st.subheader("Section 1: Time Filter")
+    time_filter = st.radio("Select Time Period", ["History", "Upcoming"], horizontal=True)
+    
+    st.divider()
+    
+    # Section 2: Yearly Club Championships
+    st.subheader("Section 2: Yearly Club Championships")
+    
+    with st.spinner("Loading yearly club championships..."):
+        # Get all yearly club championships
+        championships_response = supabase.table("yearly_club_championship").select("*").execute()
+        championships_df = pd.DataFrame(championships_response.data)
+        
+        if not championships_df.empty:
+            current_year = datetime.now().year
+            
+            if time_filter == "History":
+                # Show championships from past years
+                filtered_championships = championships_df[championships_df['year'] < current_year]
+                if not filtered_championships.empty:
+                    st.write(f"**Found {len(filtered_championships)} past championship(s)**")
+                    st.dataframe(filtered_championships.sort_values('year', ascending=False), use_container_width=True)
+                else:
+                    st.info("No past yearly club championships found.")
+            else:  # Upcoming
+                # Show championships from current and future years
+                filtered_championships = championships_df[championships_df['year'] >= current_year]
+                if not filtered_championships.empty:
+                    st.write(f"**Found {len(filtered_championships)} upcoming championship(s)**")
+                    st.dataframe(filtered_championships.sort_values('year', ascending=True), use_container_width=True)
+                else:
+                    st.info("No upcoming yearly club championships found.")
+        else:
+            st.info("No yearly club championships found in the database.")
+    
+    st.divider()
+    
+    # Section 3: Club Competitions
+    st.subheader("Section 3: Club Competitions")
+    
+    with st.spinner("Loading club competitions..."):
+        # Get all club competitions
+        competitions_response = supabase.table("club_competition").select("*").execute()
+        competitions_df = pd.DataFrame(competitions_response.data)
+        
+        if not competitions_df.empty:
+            # Convert date columns to datetime
+            competitions_df['start_date'] = pd.to_datetime(competitions_df['start_date'])
+            competitions_df['end_date'] = pd.to_datetime(competitions_df['end_date'])
+            
+            today = pd.Timestamp(datetime.now().date())
+            
+            if time_filter == "History":
+                # Show competitions where end_date is in the past
+                filtered_competitions = competitions_df[competitions_df['end_date'] < today]
+                if not filtered_competitions.empty:
+                    st.write(f"**Found {len(filtered_competitions)} past competition(s)**")
+                    # Sort by end_date descending (most recent first)
+                    st.dataframe(filtered_competitions.sort_values('end_date', ascending=False), use_container_width=True)
+                else:
+                    st.info("No past club competitions found.")
+            else:  # Upcoming
+                # Show competitions where start_date is today or in the future
+                filtered_competitions = competitions_df[competitions_df['start_date'] >= today]
+                if not filtered_competitions.empty:
+                    st.write(f"**Found {len(filtered_competitions)} upcoming competition(s)**")
+                    # Sort by start_date ascending (soonest first)
+                    st.dataframe(filtered_competitions.sort_values('start_date', ascending=True), use_container_width=True)
+                else:
+                    st.info("No upcoming club competitions found.")
+        else:
+            st.info("No club competitions found in the database.")
+
 # Recorder-only tabs
 if user_role == 'recorder':
     # Tab 4: Review Forms (Recorder only)
