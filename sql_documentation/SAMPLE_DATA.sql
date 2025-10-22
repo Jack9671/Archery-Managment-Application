@@ -53,7 +53,8 @@ INSERT INTO recorder (recorder_id, year_of_experience, about_recorder)
 VALUES 
 (4, 8, 'Experienced recorder specializing in outdoor target archery. Certified level 3 judge.'),
 (5, 5, 'Passionate about field archery competitions. Detail-oriented and reliable.'),
-(6, 3, 'New to recording but enthusiastic. Background in sports management.');
+(6, 3, 'New to recording but enthusiastic. Background in sports management.'),
+;
 
 -- ============================================
 -- 3. EQUIPMENT
@@ -364,107 +365,6 @@ VALUES
 (2, 11, 'Interested in joining for barebow training opportunities.', 'eligible', 2, 'Approved! Welcome to Melbourne Arrows.', '2024-11-15 09:00:00+00', '2024-11-17 16:00:00+00'),
 (3, 15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2025-01-10 11:00:00+00', '2025-01-10 11:00:00+00');
 
--- Friendship Requests
-INSERT INTO friendship_request_form (sender_id, receiver_id, sender_word, status)
-VALUES 
-(7, 8, 'Great shooting with you at the competition!', 'eligible'),
-(8, 7, '', 'eligible'),
-(10, 16, 'Would love to learn from your experience!', 'pending'),
-(12, 14, 'Saw you at the club, lets connect!', 'eligible');
-
--- Group Requests
-INSERT INTO "group" (group_id, creator_id, created_at)
-VALUES 
-(1, 8, '2024-12-01 10:00:00+00'),
-(2, 10, '2025-01-05 09:00:00+00');
-
-INSERT INTO group_member (group_id, member_id)
-VALUES 
-(1, 8),
-(1, 7),
-(1, 12),
-(2, 10),
-(2, 16);
-
-INSERT INTO group_request_form (sender_id, group_id, sender_word, status)
-VALUES 
-(14, 1, 'Can I join your recurve training group?', 'pending'),
-(13, 2, 'Would like to join the compound group!', 'eligible');
-
--- ============================================
--- 22. FRIENDSHIP & BLOCK LINKS
--- ============================================
-
-INSERT INTO friendship_link (account_one_id, account_two_id, created_at)
-VALUES 
-(7, 8, '2024-12-10 10:00:00+00'),
-(7, 12, '2024-11-20 14:00:00+00'),
-(10, 16, '2024-10-15 09:00:00+00'),
-(12, 14, '2024-12-01 11:00:00+00');
-
-INSERT INTO block_link (account_one_id, account_two_id)
-VALUES 
-(9, 15);  -- Example block
-
--- ============================================
--- 23. CHAT HISTORIES
--- ============================================
-
--- Person to Person Chat
-INSERT INTO person_to_person_chat_history (account_one_id, account_two_id, message_order, message, sender_id)
-VALUES 
-(7, 8, 1, 'Hey! Great scores today!', 7),
-(7, 8, 2, 'Thanks! You too! Want to practice tomorrow?', 8),
-(7, 8, 3, 'Absolutely! See you at 9am?', 7),
-(7, 8, 4, 'Perfect!', 8);
-
-INSERT INTO person_to_person_old_message_visibility (account_one_id, account_two_id, message_order, account_one_viewable, account_two_viewable)
-VALUES 
-(7, 8, 1, true, true),
-(7, 8, 2, true, true),
-(7, 8, 3, true, true),
-(7, 8, 4, true, true);
-
--- Group Chat
-INSERT INTO group_chat_history (group_id, message_order, message, writer_id)
-VALUES 
-(1, 1, 'Welcome to the recurve training group!', 8),
-(1, 2, 'Thanks for adding me!', 7),
-(1, 3, 'Happy to be here!', 12),
-(1, 4, 'Lets schedule our next practice session', 8),
-(2, 1, 'Compound shooters unite!', 10),
-(2, 2, 'Looking forward to training together', 16);
-
-INSERT INTO group_old_message_visibility (group_id, message_order, viewable_member_id)
-VALUES 
-(1, 1, 8),
-(1, 1, 7),
-(1, 1, 12),
-(1, 2, 8),
-(1, 2, 7),
-(1, 2, 12),
-(1, 3, 8),
-(1, 3, 7),
-(1, 3, 12),
-(1, 4, 8),
-(1, 4, 7),
-(1, 4, 12),
-(2, 1, 10),
-(2, 1, 16),
-(2, 2, 10),
-(2, 2, 16);
-
--- ============================================
--- 24. AI CONVERSATION HISTORY
--- ============================================
-
-INSERT INTO ai_conversation_history (account_id, conversation_order, prompt_response_order, prompt, response)
-VALUES 
-(7, 1, 1, 'What are some tips for improving my recurve form?', 'Here are key tips for recurve form: 1) Maintain consistent anchor point, 2) Keep your bow arm straight and locked, 3) Focus on back tension during release, 4) Practice your breathing rhythm, 5) Ensure proper alignment from drawing shoulder to arrow to target.'),
-(7, 1, 2, 'How do I improve my grouping at 70m?', 'To improve grouping at 70m: 1) Work on consistent shot execution, 2) Practice at longer distances regularly, 3) Fine-tune your sight settings, 4) Focus on mental game and shot routine, 5) Record and analyze your arrow patterns, 6) Ensure equipment is properly tuned.'),
-(8, 1, 1, 'What should I eat before a competition?', 'Before competition: 1) Eat a balanced meal 2-3 hours before, 2) Include complex carbs for sustained energy, 3) Moderate protein, 4) Avoid heavy, greasy foods, 5) Stay hydrated, 6) Have light snacks like bananas or energy bars during breaks, 7) Avoid trying new foods on competition day.'),
-(10, 1, 1, 'How do I tune my compound bow?', 'Compound bow tuning steps: 1) Paper tune first - shoot through paper to check arrow flight, 2) Walk back tune at various distances, 3) Adjust cam timing if needed, 4) Check center shot alignment, 5) Fine-tune rest position, 6) Verify nocking point height, 7) Test with broadheads if hunting.'),
-(12, 1, 1, 'Whats a good training routine for intermediate archers?', 'Intermediate training routine: 1) 3-4 sessions per week, 2) Warm up with close-range shooting, 3) Practice at competition distances, 4) Include blank bale sessions for form, 5) Work on mental training and visualization, 6) Film yourself to analyze form, 7) Include strength and flexibility exercises, 8) Rest adequately between sessions.');
 
 -- ============================================
 -- 25. ACCOUNT REPORTS
@@ -564,57 +464,7 @@ VALUES
 (5, 16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2024-10-01 10:00:00+00', '2024-10-05 15:00:00+00'),
 (6, 11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2025-01-20 11:00:00+00', '2025-01-22 16:00:00+00');
 
--- ============================================
--- 29. ADDITIONAL FRIENDSHIPS AND GROUPS
--- ============================================
 
--- More friendship links
-INSERT INTO friendship_link (account_one_id, account_two_id, created_at)
-VALUES 
-(8, 14, '2024-11-15 10:00:00+00'),
-(10, 13, '2024-12-20 14:00:00+00'),
-(11, 12, '2024-10-10 09:00:00+00');
-
--- More friendship requests
-INSERT INTO friendship_request_form (sender_id, receiver_id, sender_word, status)
-VALUES 
-(9, 11, 'Fellow barebow archer! Lets connect', 'pending'),
-(13, 16, 'Would appreciate any tips from a pro!', 'eligible'),
-(15, 16, 'Training partner request', 'ineligible');
-
--- Additional groups
-INSERT INTO "group" (group_id, creator_id, created_at)
-VALUES 
-(3, 14, '2024-09-15 10:00:00+00'),  -- Advanced Recurve Group
-(4, 4, '2025-01-20 09:00:00+00');   -- Recorder Network Group
-
-INSERT INTO group_member (group_id, member_id)
-VALUES 
-(3, 14),
-(3, 8),
-(3, 12),
-(4, 4),
-(4, 5),
-(4, 6);
-
--- Group chat messages
-INSERT INTO group_chat_history (group_id, message_order, message, writer_id)
-VALUES 
-(3, 1, 'Welcome to the advanced recurve training group!', 14),
-(3, 2, 'Excited to train with you all', 8),
-(3, 3, 'Looking forward to improving together', 12),
-(4, 1, 'Recorder coordination group for upcoming events', 4),
-(4, 2, 'Thanks for setting this up!', 5),
-(4, 3, 'Great idea to have a dedicated channel', 6);
-
-INSERT INTO group_old_message_visibility (group_id, message_order, viewable_member_id)
-VALUES 
-(3, 1, 14), (3, 1, 8), (3, 1, 12),
-(3, 2, 14), (3, 2, 8), (3, 2, 12),
-(3, 3, 14), (3, 3, 8), (3, 3, 12),
-(4, 1, 4), (4, 1, 5), (4, 1, 6),
-(4, 2, 4), (4, 2, 5), (4, 2, 6),
-(4, 3, 4), (4, 3, 5), (4, 3, 6);
 
 -- ============================================
 -- 30. SUMMARY & VERIFICATION QUERIES

@@ -1,268 +1,480 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from utility_function.initilize_dbconnection import supabase
-from utility_function.performance_utility import (
-    get_round_rankings, get_category_percentile, calculate_normalized_average_score,
-    get_personal_performance, get_community_performance, get_all_categories
-)
+from utility_function import performance_utility
 
 # Check if user is logged in
 if not st.session_state.get('logged_in', False):
     st.warning("Please log in to access this page.")
     st.stop()
 
-st.title("📊 Performance Tracking")
+st.title("📈 Performance Analytics")
 st.write(f"Welcome, {st.session_state.get('fullname')}!")
 
+user_role = st.session_state.get('role')
+user_id = st.session_state.get('user_id')
+
 # Create tabs
-tab1, tab2, tab3 = st.tabs(["🎯 Round Performance", "👤 Personal Performance", "🏆 Category Rankings"])
+tabs = st.tabs(["👤 Personal Performance", "👥 Others' Performance", "🌍 Community Leaderboard", "🏆 Category Ratings"])
+tab_personal, tab_others, tab_community, tab_category = tabs
 
-# Tab 1: Round Performance
-with tab1:
-    st.header("Round Performance")
-    st.write("View rankings and scores for specific rounds in competitions")
+# ========================================
+# TAB 1: Personal Performance
+# ========================================
+with tab_personal:
+    st.header("👤 My Performance Analytics")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        round_id = st.text_input("Round ID", placeholder="Enter round ID")
-    
-    with col2:
-        competition_id = st.text_input("Competition ID", placeholder="Enter competition ID")
-    
-    if st.button("📊 View Rankings", type="primary"):
-        if round_id and competition_id:
-            rankings_df = get_round_rankings(round_id, competition_id)
-            
-            if not rankings_df.empty:
-                st.success(f"Found {len(rankings_df)} participant(s)")
-                
-                # Display rankings table
-                st.subheader("Rankings")
-                st.dataframe(rankings_df, use_container_width=True)
-                
-                # Visualization
-                if len(rankings_df) > 0:
-                    fig = px.bar(
-                        rankings_df,
-                        x='participating_id',
-                        y='total_score',
-                        title=f'Scores for Round {round_id} in Competition {competition_id}',
-                        labels={'participating_id': 'Participant ID', 'total_score': 'Total Score'},
-                        color='total_score',
-                        color_continuous_scale='Viridis'
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("No rankings found for this round and competition.")
-        else:
-            st.error("Please enter both Round ID and Competition ID.")
-    
-    # Normalized Average Score for Yearly Championship
-    st.divider()
-    st.subheader("📈 Normalized Average Score (Yearly Championship)")
-    st.write("Calculate how well an archer performs on a specific round during a yearly championship")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        archer_id_norm = st.text_input("Archer ID", placeholder="Enter archer ID", key="archer_norm")
-    
-    with col2:
-        round_id_norm = st.text_input("Round ID ", placeholder="Enter round ID", key="round_norm")
-    
-    with col3:
-        championship_id = st.text_input("Championship ID", placeholder="Enter championship ID")
-    
-    if st.button("🧮 Calculate Normalized Score", type="primary"):
-        if archer_id_norm and round_id_norm and championship_id:
-            normalized_score = calculate_normalized_average_score(
-                archer_id_norm, round_id_norm, championship_id
-            )
-            
-            st.metric("Normalized Average Score", f"{normalized_score:.2%}")
-            
-            if normalized_score > 0:
-                st.success(f"Archer {archer_id_norm} has a normalized average score of {normalized_score:.2%} for Round {round_id_norm}")
-            else:
-                st.info("No data available for this combination.")
-        else:
-            st.error("Please fill in all fields.")
-
-# Tab 2: Personal Performance
-with tab2:
-    st.header("Personal Performance")
-    
-    performance_type = st.radio("View Performance For", ["Myself", "Another Archer"])
-    
-    if performance_type == "Myself":
-        archer_id_personal = st.session_state.user_id
-        st.info(f"Viewing performance for: {st.session_state.fullname} (ID: {archer_id_personal})")
+    if user_role != 'archer':
+        st.warning("Personal performance is only available for archers.")
     else:
-        archer_id_personal = st.text_input("Enter Archer ID", placeholder="Archer ID")
-    
-    if st.button("📊 Load Performance Data", type="primary"):
-        if archer_id_personal:
-            performance_df = get_personal_performance(archer_id_personal)
-            
-            if not performance_df.empty:
-                st.success(f"Found {len(performance_df)} competition record(s)")
-                
-                # Display performance data
-                st.dataframe(performance_df, use_container_width=True)
-                
-                # Statistics
-                st.divider()
-                st.subheader("📈 Performance Statistics")
-                
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Total Competitions", len(performance_df))
-                
-                with col2:
-                    avg_score = performance_df['total_score'].mean()
-                    st.metric("Average Score", f"{avg_score:.2f}")
-                
-                with col3:
-                    max_score = performance_df['total_score'].max()
-                    st.metric("Best Score", f"{max_score:.0f}")
-                
-                with col4:
-                    min_score = performance_df['total_score'].min()
-                    st.metric("Lowest Score", f"{min_score:.0f}")
-                
-                # Score trend visualization
-                if len(performance_df) > 1:
-                    st.divider()
-                    st.subheader("📉 Score Trend")
-                    
-                    # Sort by event context id (chronological)
-                    performance_df_sorted = performance_df.sort_values('event_context_id')
-                    
-                    fig = px.line(
-                        performance_df_sorted,
-                        x=performance_df_sorted.index,
-                        y='total_score',
-                        title='Score Progression Over Competitions',
-                        labels={'index': 'Competition Number', 'total_score': 'Total Score'},
-                        markers=True
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("No competition performance data found for this archer.")
-        else:
-            st.error("Please enter an Archer ID.")
+        # Overall statistics
+        st.subheader("📊 Overall Statistics")
+        if st.button("🔄 Refresh Statistics", key="refresh_stats"):
+            st.rerun()
+        stats_type = st.selectbox("Score Type", ["competition", "practice"], key="stats_type")
 
-# Tab 3: Category Rankings
-with tab3:
-    st.header("Category Rankings & Percentiles")
-    st.write("View percentile rankings for different categories")
-    
-    # Get all categories
-    categories_df = get_all_categories()
-    
-    if not categories_df.empty:
-        st.subheader("📋 Available Categories")
-        st.dataframe(categories_df[['category_id']], use_container_width=True)
-    
-    st.divider()
-    st.subheader("🔍 Check Archer Percentile")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        archer_id_percentile = st.text_input("Archer ID", placeholder="Enter archer ID", key="archer_percentile")
-    
-    with col2:
-        category_id_percentile = st.text_input("Category ID", placeholder="Enter category ID", key="category_percentile")
-    
-    if st.button("🏅 Get Percentile", type="primary"):
-        if archer_id_percentile and category_id_percentile:
-            percentile_data = get_category_percentile(archer_id_percentile, category_id_percentile)
+        
+        stats = performance_utility.get_personal_statistics(user_id, stats_type)
+        
+        if stats:
+            cols = st.columns(3)
+            cols[0].metric("Total Ends Recorded", stats['total_ends'])
+            cols[1].metric("Verified Ends", stats['total_eligible_ends'])
+            cols[2].metric("Average Score", f"{stats['average_score']:.2f}")
             
-            if percentile_data:
-                percentile_value = percentile_data.get('percentile', 0)
+            cols = st.columns(3)
+            cols[0].metric("Highest Score", stats['highest_score'])
+            cols[1].metric("Lowest Score", stats['lowest_score'])
+            cols[2].metric("Consistency (σ)", f"{stats['std_deviation']:.2f}")
+        else:
+            st.info("No performance data available yet. Start competing to track your performance!")
+        
+        st.divider()
+        
+        # Competition-specific performance
+        st.subheader("🎯 Round Performance in Competition")
+        st.write("View your total score, ranking, and percentile for a specific round in a competition")
+        
+        # Get archer's competition history
+        comp_history = performance_utility.get_archer_competition_history(user_id)
+        
+        if not comp_history.empty:
+            comp_map = {f"{row['name']} ({row['date_start']} to {row['date_end']})": idx 
+                       for idx, row in comp_history.iterrows()}
+            
+            selected_comp_name = st.selectbox("Select Competition*", list(comp_map.keys()))
+            comp_idx = comp_map[selected_comp_name]
+            competition_id = comp_history.iloc[comp_idx].name
+            
+            # Get rounds in this competition
+            rounds_map = performance_utility.get_rounds_in_competition(competition_id)
+            
+            if rounds_map:
+                selected_round_name = st.selectbox("Select Round*", list(rounds_map.keys()))
+                round_id = rounds_map[selected_round_name]
                 
-                st.success(f"Percentile found for Archer {archer_id_percentile} in Category {category_id_percentile}")
-                
-                # Display percentile with visual indicator
-                col1, col2, col3 = st.columns([1, 2, 1])
-                
-                with col2:
-                    st.metric("Percentile Ranking", f"{percentile_value:.1f}%")
+                if st.button("📊 Analyze Performance", type="primary", key="analyze_perf"):
+                    performance = performance_utility.get_round_performance_for_competition(
+                        user_id, competition_id, round_id
+                    )
                     
-                    # Create a progress bar visualization
-                    st.progress(percentile_value / 100)
-                    
-                    # Interpretation
-                    if percentile_value >= 90:
-                        st.success("🏆 Excellent! Top 10% performer")
-                    elif percentile_value >= 75:
-                        st.info("🥈 Great! Top 25% performer")
-                    elif percentile_value >= 50:
-                        st.info("📊 Good! Above average performer")
+                    if performance:
+                        st.success("✅ Performance Analysis Complete!")
+                        
+                        cols = st.columns(4)
+                        cols[0].metric("Total Score", performance['total_score'])
+                        cols[1].metric("Ranking", f"#{performance['ranking']}")
+                        cols[2].metric("Percentile", f"{performance['percentile']}%")
+                        cols[3].metric("Total Participants", performance['total_participants'])
+                        
+                        # Visualization
+                        fig = go.Figure(go.Indicator(
+                            mode = "gauge+number+delta",
+                            value = performance['percentile'],
+                            domain = {'x': [0, 1], 'y': [0, 1]},
+                            title = {'text': "Your Percentile"},
+                            delta = {'reference': 50},
+                            gauge = {
+                                'axis': {'range': [None, 100]},
+                                'bar': {'color': "darkblue"},
+                                'steps': [
+                                    {'range': [0, 25], 'color': "lightgray"},
+                                    {'range': [25, 50], 'color': "gray"},
+                                    {'range': [50, 75], 'color': "lightgreen"},
+                                    {'range': [75, 100], 'color': "green"}
+                                ],
+                                'threshold': {
+                                    'line': {'color': "red", 'width': 4},
+                                    'thickness': 0.75,
+                                    'value': 90
+                                }
+                            }
+                        ))
+                        
+                        fig.update_layout(height=300)
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Interpretation
+                        if performance['percentile'] >= 90:
+                            st.success("🌟 Outstanding! You're in the top 10% of performers!")
+                        elif performance['percentile'] >= 75:
+                            st.success("🎯 Excellent! You're performing better than 75% of participants!")
+                        elif performance['percentile'] >= 50:
+                            st.info("👍 Good! You're performing above average!")
+                        else:
+                            st.info("💪 Keep practicing! There's room for improvement!")
                     else:
-                        st.info("📈 Keep practicing to improve your ranking!")
-                
-                st.divider()
-                st.write("**What does this mean?**")
-                st.write(f"This archer performs better than {percentile_value:.1f}% of all archers in this category.")
+                        st.warning("No performance data found for this round.")
             else:
-                st.warning("No percentile data found for this archer in this category.")
+                st.warning("No rounds found for this competition.")
         else:
-            st.error("Please enter both Archer ID and Category ID.")
-    
-    # Community performance comparison
-    st.divider()
-    st.subheader("🌐 Community Performance")
-    st.write("Compare performance across all participants in a specific round")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        community_round_id = st.text_input("Round ID", placeholder="Enter round ID", key="community_round")
-    
-    with col2:
-        community_comp_id = st.text_input("Competition ID", placeholder="Enter competition ID", key="community_comp")
-    
-    if st.button("👥 View Community Performance", type="primary"):
-        if community_round_id and community_comp_id:
-            community_df = get_community_performance(community_round_id, community_comp_id)
+            st.info("You haven't participated in any competitions yet.")
+        
+        st.divider()
+        
+        # Championship performance
+        st.subheader("🏆 Championship Performance")
+        st.write("View your normalized average score for a round across all competitions in a championship")
+        
+        championships_map = performance_utility.get_yearly_championships()
+        
+        if championships_map:
+            selected_champ_name = st.selectbox("Select Championship*", list(championships_map.keys()))
+            championship_id = championships_map[selected_champ_name]
             
-            if not community_df.empty:
-                st.success(f"Found {len(community_df)} participant(s)")
+            # Get rounds - need to fetch from championship competitions
+            round_map = performance_utility.get_round_map()
+            
+            if round_map:
+                selected_round_name = st.selectbox("Select Round*", list(round_map.keys()), key="champ_round")
+                round_id = round_map[selected_round_name]
                 
-                # Display data
-                st.dataframe(community_df, use_container_width=True)
-                
-                # Statistics
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    avg_community_score = community_df['total_score'].mean()
-                    st.metric("Community Average", f"{avg_community_score:.2f}")
-                
-                with col2:
-                    highest_score = community_df['total_score'].max()
-                    st.metric("Highest Score", f"{highest_score:.0f}")
-                
-                with col3:
-                    lowest_score = community_df['total_score'].min()
-                    st.metric("Lowest Score", f"{lowest_score:.0f}")
-                
-                # Distribution visualization
-                fig = px.histogram(
-                    community_df,
-                    x='total_score',
-                    nbins=20,
-                    title='Score Distribution',
-                    labels={'total_score': 'Total Score', 'count': 'Number of Participants'},
-                    color_discrete_sequence=['#636EFA']
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                if st.button("📈 Analyze Championship Performance", type="primary", key="analyze_champ"):
+                    result = performance_utility.get_normalized_average_for_round_in_championship(
+                        user_id, championship_id, round_id
+                    )
+                    
+                    if result:
+                        st.success("✅ Championship Analysis Complete!")
+                        
+                        cols = st.columns(3)
+                        cols[0].metric("Normalized Average", f"{result['normalized_average']:.4f}")
+                        cols[1].metric("Competitions Participated", result['competitions_participated'])
+                        cols[2].metric("Total Competitions", result['total_competitions'])
+                        
+                        # Percentage bar
+                        percentage = result['normalized_average'] * 100
+                        
+                        fig = go.Figure(go.Indicator(
+                            mode = "gauge+number",
+                            value = percentage,
+                            domain = {'x': [0, 1], 'y': [0, 1]},
+                            title = {'text': "Score Efficiency (%)"},
+                            gauge = {
+                                'axis': {'range': [None, 100]},
+                                'bar': {'color': "darkgreen"},
+                                'steps': [
+                                    {'range': [0, 50], 'color': "lightgray"},
+                                    {'range': [50, 70], 'color': "yellow"},
+                                    {'range': [70, 85], 'color': "orange"},
+                                    {'range': [85, 100], 'color': "lightgreen"}
+                                ]
+                            }
+                        ))
+                        
+                        fig.update_layout(height=300)
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        st.info(f"💡 You scored an average of {percentage:.2f}% of the maximum possible score across {result['competitions_participated']} competition(s).")
+                    else:
+                        st.warning("No championship performance data found for this round.")
             else:
-                st.warning("No community performance data found.")
+                st.warning("No rounds available.")
         else:
-            st.error("Please enter both Round ID and Competition ID.")
+            st.info("No championships available yet.")
+
+# ========================================
+# TAB 2: Others' Performance
+# ========================================
+with tab_others:
+    st.header("👥 View Others' Performance")
+    st.write("Compare and learn from other archers' performance")
+    
+    archer_map = performance_utility.get_archer_map()
+    
+    if not archer_map:
+        st.warning("No other archers found in the system.")
+    else:
+        selected_archer_name = st.selectbox("Select Archer*", list(archer_map.keys()))
+        archer_id = archer_map[selected_archer_name]
+        
+        # Overall statistics
+        st.subheader("📊 Overall Statistics")
+        
+        stats = performance_utility.get_personal_statistics(archer_id, 'competition')
+        
+        if stats:
+            cols = st.columns(3)
+            cols[0].metric("Total Ends", stats['total_ends'])
+            cols[1].metric("Verified Ends", stats['total_eligible_ends'])
+            cols[2].metric("Average Score", f"{stats['average_score']:.2f}")
+            
+            cols = st.columns(3)
+            cols[0].metric("Highest Score", stats['highest_score'])
+            cols[1].metric("Lowest Score", stats['lowest_score'])
+            cols[2].metric("Consistency", f"{stats['std_deviation']:.2f}")
+        else:
+            st.info("This archer has no competition data yet.")
+        
+        st.divider()
+        
+        # Competition history
+        st.subheader("🏆 Competition History")
+        
+        comp_history = performance_utility.get_archer_competition_history(archer_id)
+        
+        if not comp_history.empty:
+            st.success(f"Found {len(comp_history)} competition(s)")
+            st.dataframe(comp_history, use_container_width=True, hide_index=True)
+        else:
+            st.info("This archer hasn't participated in any competitions yet.")
+        
+        st.divider()
+        
+        # Round performance
+        st.subheader("🎯 Round Performance Analysis")
+        
+        if not comp_history.empty:
+            comp_map_others = {f"{row['name']} ({row['date_start']} to {row['date_end']})": idx 
+                              for idx, row in comp_history.iterrows()}
+            
+            selected_comp_name_others = st.selectbox("Select Competition*", list(comp_map_others.keys()), key="others_comp")
+            comp_idx_others = comp_map_others[selected_comp_name_others]
+            competition_id_others = comp_history.iloc[comp_idx_others].name
+            
+            rounds_map_others = performance_utility.get_rounds_in_competition(competition_id_others)
+            
+            if rounds_map_others:
+                selected_round_name_others = st.selectbox("Select Round*", list(rounds_map_others.keys()), key="others_round")
+                round_id_others = rounds_map_others[selected_round_name_others]
+                
+                if st.button("📊 View Performance", type="primary", key="view_others"):
+                    performance = performance_utility.get_round_performance_for_competition(
+                        archer_id, competition_id_others, round_id_others
+                    )
+                    
+                    if performance:
+                        cols = st.columns(4)
+                        cols[0].metric("Total Score", performance['total_score'])
+                        cols[1].metric("Ranking", f"#{performance['ranking']}")
+                        cols[2].metric("Percentile", f"{performance['percentile']}%")
+                        cols[3].metric("Total Participants", performance['total_participants'])
+                    else:
+                        st.warning("No performance data found.")
+
+# ========================================
+# TAB 3: Community Leaderboard
+# ========================================
+with tab_community:
+    st.header("🌍 Community Leaderboard")
+    st.write("See the top performers for specific rounds in competitions")
+    
+    # Get all competitions
+    try:
+        comp_response = supabase.table("club_competition").select("club_competition_id, name, date_start, date_end").execute()
+        
+        if comp_response.data:
+            comp_map_community = {f"{row['name']} ({row['date_start']} to {row['date_end']})": row['club_competition_id'] 
+                                 for row in comp_response.data}
+            
+            selected_comp_community = st.selectbox("Select Competition*", list(comp_map_community.keys()), key="community_comp")
+            competition_id_community = comp_map_community[selected_comp_community]
+            
+            # Get rounds in this competition
+            rounds_map_community = performance_utility.get_rounds_in_competition(competition_id_community)
+            
+            if rounds_map_community:
+                selected_round_community = st.selectbox("Select Round*", list(rounds_map_community.keys()), key="community_round")
+                round_id_community = rounds_map_community[selected_round_community]
+                
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    limit = st.slider("Number of top performers to display", min_value=5, max_value=50, value=10)
+                with col2:
+                    st.write("")
+                    st.write("")
+                    show_leaderboard = st.button("🏆 Show Leaderboard", type="primary", use_container_width=True)
+                
+                if show_leaderboard:
+                    leaderboard_df = performance_utility.get_community_leaderboard(
+                        round_id_community, competition_id_community, limit
+                    )
+                    
+                    if not leaderboard_df.empty:
+                        st.success(f"🎯 Top {len(leaderboard_df)} Performers")
+                        
+                        # Highlight top 3
+                        def highlight_top3(row):
+                            if row['Rank'] == 1:
+                                return ['background-color: gold'] * len(row)
+                            elif row['Rank'] == 2:
+                                return ['background-color: silver'] * len(row)
+                            elif row['Rank'] == 3:
+                                return ['background-color: #CD7F32'] * len(row)
+                            else:
+                                return [''] * len(row)
+                        
+                        styled_df = leaderboard_df.style.apply(highlight_top3, axis=1)
+                        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                        
+                        # Visualization horizontal bar chart
+                        fig = px.bar(
+                            leaderboard_df, 
+                            x='Archer', 
+                            y='Total Score',
+                            color='Total Score',
+                            color_continuous_scale='Viridis',
+                            title=f'Top {len(leaderboard_df)} Performers',
+                            labels={'Total Score': 'Total Score'},
+                            text='Total Score',
+                        
+                        )
+                        
+                        fig.update_traces(texttemplate='%{text}', textposition='outside')
+                        fig.update_layout(xaxis_tickangle=-45, height=500)
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Show if current user is in leaderboard
+                        if user_role == 'archer' and user_id in leaderboard_df['Archer ID'].values:
+                            user_rank = leaderboard_df[leaderboard_df['Archer ID'] == user_id]['Rank'].values[0]
+                            user_score = leaderboard_df[leaderboard_df['Archer ID'] == user_id]['Total Score'].values[0]
+                            st.success(f"🎉 You're on the leaderboard! Rank #{user_rank} with {user_score} points!")
+                    else:
+                        st.info("No leaderboard data available for this round.")
+            else:
+                st.warning("No rounds found for this competition.")
+        else:
+            st.warning("No competitions available.")
+    except Exception as e:
+        st.error(f"Error loading leaderboard: {e}")
+
+# ========================================
+# TAB 4: Category Ratings
+# ========================================
+with tab_category:
+    st.header("🏆 Category-Specific Ratings")
+    st.write("View percentile rankings by category (discipline + age + equipment)")
+    
+    if user_role != 'archer':
+        st.warning("Category ratings are only available for archers.")
+        
+        # Allow viewing other archers
+        st.divider()
+        st.subheader("View Other Archer's Ratings")
+        
+        archer_map_cat = performance_utility.get_archer_map()
+        if archer_map_cat:
+            selected_archer_cat = st.selectbox("Select Archer*", list(archer_map_cat.keys()), key="cat_archer")
+            archer_id_cat = archer_map_cat[selected_archer_cat]
+            view_archer_id = archer_id_cat
+        else:
+            st.stop()
+    else:
+        view_archer_id = user_id
+    
+    # Get category map
+    category_map = performance_utility.get_category_map()
+    
+    if not category_map:
+        st.warning("No categories available.")
+    else:
+        st.write("**Select a category to view your global percentile ranking:**")
+        
+        selected_category = st.selectbox("Select Category*", list(category_map.keys()))
+        category_id = category_map[selected_category]
+        
+        if st.button("🔍 Check Rating", type="primary"):
+            percentile = performance_utility.get_category_percentile(view_archer_id, category_id)
+            
+            if percentile is not None:
+                st.success(f"✅ Category Percentile: **{percentile}%**")
+                
+                # Gauge chart
+                fig = go.Figure(go.Indicator(
+                    mode = "gauge+number",
+                    value = percentile,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': f"Global Percentile<br><span style='font-size:0.8em'>{selected_category}</span>"},
+                    gauge = {
+                        'axis': {'range': [None, 100]},
+                        'bar': {'color': "darkblue"},
+                        'steps': [
+                            {'range': [0, 25], 'color': "lightgray"},
+                            {'range': [25, 50], 'color': "gray"},
+                            {'range': [50, 75], 'color': "lightblue"},
+                            {'range': [75, 90], 'color': "lightgreen"},
+                            {'range': [90, 100], 'color': "gold"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': 95
+                        }
+                    }
+                ))
+                
+                fig.update_layout(height=400)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Interpretation
+                st.write("**What does this mean?**")
+                if percentile >= 95:
+                    st.success("🌟 **Elite Level!** You're performing better than 95% of all archers globally in this category!")
+                elif percentile >= 90:
+                    st.success("🏆 **Exceptional!** You're in the top 10% of archers in this category!")
+                elif percentile >= 75:
+                    st.info("🎯 **Advanced!** You're performing better than 75% of archers in this category!")
+                elif percentile >= 50:
+                    st.info("👍 **Above Average!** You're performing better than half of all archers!")
+                else:
+                    st.info("💪 **Developing!** Keep practicing to improve your global ranking!")
+                
+                st.info(f"💡 This percentile is calculated based on your verified competition scores in the {selected_category} category compared to all other archers globally.")
+            else:
+                st.warning("No rating data found for this category. Participate in competitions to earn a rating!")
+        
+        st.divider()
+        
+        # Show all available ratings
+        st.subheader("📋 All Your Category Ratings")
+        
+        try:
+            all_ratings_response = supabase.table("category_rating_percentile").select(
+                """
+                percentile,
+                category(
+                    discipline(name),
+                    age_division(min_age, max_age),
+                    equipment(name)
+                )
+                """
+            ).eq("archer_id", view_archer_id).execute()
+            
+            if all_ratings_response.data:
+                ratings_data = []
+                for row in all_ratings_response.data:
+                    cat = row['category']
+                    ratings_data.append({
+                        'Category': f"{cat['discipline']['name']} - {cat['equipment']['name']} (Ages {cat['age_division']['min_age']}-{cat['age_division']['max_age']})",
+                        'Percentile': f"{row['percentile']}%"
+                    })
+                
+                ratings_df = pd.DataFrame(ratings_data)
+                st.dataframe(ratings_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No category ratings available yet. Compete to earn ratings!")
+        except Exception as e:
+            st.error(f"Error loading ratings: {e}")
