@@ -19,13 +19,14 @@ st.write(f"Welcome, {st.session_state.get('fullname')}!")
 user_role = st.session_state.get('role')
 
 if user_role == 'recorder':
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🏢 Club Groups", "⚙️ Event Management"])
-    tab_browse, tab_enroll, tab_review, tab_schedule, tab_club_groups, tab_manage = tabs
+    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🏢 Club Groups", "⚙️ Event Management", "📆 Event Timeline"])
+    tab_browse, tab_enroll, tab_review, tab_schedule, tab_club_groups, tab_manage, tab_timeline = tabs
 else:
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule"])
+    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule", "📆 Event Timeline"])
     tab_browse = tabs[0]
     tab_enroll = tabs[1]
     tab_schedule = tabs[2]
+    tab_timeline = tabs[3]
 
 # Tab 1: Browse Events
 with tab_browse:
