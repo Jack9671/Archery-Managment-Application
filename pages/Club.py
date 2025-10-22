@@ -41,7 +41,7 @@ with tab1:
         
         # Display clubs
         for idx, club in st.session_state.clubs_df.iterrows():
-            with st.expander(f"🏹 {club['name']} (ID: {club['club_id']})"):
+            with st.expander(f"🏹 {club['name']}"):
                 col1, col2 = st.columns([1, 3])
                 
                 with col1:
@@ -137,7 +137,7 @@ with tab1:
                         )
                         
                         if result:
-                            st.success(f"✅ Club created successfully! Club ID: {result['club_id']}")
+                            st.success(f"✅ Club created successfully!")
                             st.balloons()
                             st.rerun()
                         else:

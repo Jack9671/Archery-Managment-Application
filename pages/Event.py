@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
+import plotly.express as px
 from datetime import datetime, date
 from utility_function.initilize_dbconnection import supabase
 import utility_function.event_utility as event_utility
@@ -34,39 +35,51 @@ with tab_browse:
     # Section 1: Filter and Display Events
     with st.expander("🔧 Configure Filters", expanded=True):
         event_type = st.selectbox("Event Type", ["yearly club championship", "club competition"])
+        
+        # Initialize all variables at outer scope
+        category_id = None
+        year = None
+        eligible_group_id = None
+        list_of_club_name = []
+        date_start = None
+        date_end = None
+        club_option = None
+        
         if event_type == "yearly club championship":
             year = st.number_input("Year", value=date.today().year)
             category_map = event_utility.get_category_map()
-            category_name = st.selectbox("Category", ["All"] + list(category_map.values()))
-            #search for category_id from category_name
+            category_name = st.selectbox("Category", ["All"] + list(category_map.keys()))
             if category_name != "All":
-                category_id = [cat_id for cat_id, name in category_map.items() if name == category_name][0]
-            else:
-                category_id = None # None means all categories
+                category_id = category_map[category_name]
             club_map = event_utility.get_club_map()
             club_option = st.radio("Choose Club Filter Method", ["All Clubs", "Select Clubs"])
             if club_option != "All Clubs":
                 list_of_club_name = st.multiselect(
                     "Interested Club*", 
-                    options=list(club_map.values()),
+                    options=list(club_map.keys()),
                     help="⚠️ You must select at least one club"
                 ) # select a group of clubs, this var is used to find eligible groups of clubs later
                 if list_of_club_name:
-                    list_of_club_id = [club_id for club_id, name in club_map.items() if name in list_of_club_name]
+                    list_of_club_id = [club_map[name] for name in list_of_club_name]
                     # Find eligible group ids that match the selected club ids
                     list_of_eligible_group_id = event_utility.get_list_of_eligible_group_id_from_a_set_of_club_id(set(list_of_club_id))
-                    #given an eligible_group_of_club_id, display list of name of club where club_id is in eligible_club_member of that eligible_group_of_club_id. Repeat for all eligible_group_of_club_id in list_of_eligible_group_id
-                    list_of_eligible_club_names = {}
-                    for group_id in list_of_eligible_group_id:
-                        club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(group_id)
-                        list_of_eligible_club_names[group_id] = club_names
-                    # Display info
-                    info_str = "💡 Those are id of eligible groups that include the clubs you selected, please pick one group id:\n"
-                    for group_id, club_names in list_of_eligible_club_names.items():
-                        info_str += f" - Group ID {group_id} : {', '.join(club_names)}\n"
-                    st.info(info_str)
-                    # then let user select one of the eligible_group_of_club_id from the list
-                    eligible_group_id = int(st.selectbox("Eligible Group ID", [str(gid) for gid in list_of_eligible_group_id]))
+                    
+                    if list_of_eligible_group_id:  # Check if list is not empty
+                        #given an eligible_group_of_club_id, display list of name of club where club_id is in eligible_club_member of that eligible_group_of_club_id. Repeat for all eligible_group_of_club_id in list_of_eligible_group_id
+                        list_of_eligible_club_names = {}
+                        for group_id in list_of_eligible_group_id:
+                            club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(group_id)
+                            list_of_eligible_club_names[group_id] = club_names
+                        # Display info
+                        info_str = "💡 Those are id of eligible groups that include the clubs you selected, please pick one group id:\n"
+                        for group_id, club_names in list_of_eligible_club_names.items():
+                            info_str += f" - Group ID {group_id} : {', '.join(club_names)}\n"
+                        st.info(info_str)
+                        # then let user select one of the eligible_group_of_club_id from the list
+                        eligible_group_id = int(st.selectbox("Eligible Group ID", [str(gid) for gid in list_of_eligible_group_id]))
+                    else:
+                        st.warning("⚠️ No eligible groups found for the selected clubs.")
+                        eligible_group_id = None
                 else:
                     # User selected "Select Clubs" but hasn't chosen any clubs yet
                     eligible_group_id = None
@@ -77,9 +90,9 @@ with tab_browse:
             date_start = st.date_input("Start Date (From)", value=None)
             date_end = st.date_input("End Date (To)", value=None)
             category_map = event_utility.get_category_map()
-            category_name = st.selectbox("Category", ["All"] + list(category_map.values()))
+            category_name = st.selectbox("Category", ["All"] + list(category_map.keys()))
             if category_name != "All":
-                category_id = [cat_id for cat_id, name in category_map.items() if name == category_name][0]
+                category_id = category_map[category_name]
             else:
                 category_id = None # None means all categories
             club_map = event_utility.get_club_map()
@@ -87,31 +100,35 @@ with tab_browse:
             if club_option != "All Clubs":
                 list_of_club_name = st.multiselect(
                     "Interested Club*", 
-                    options=list(club_map.values()),
+                    options=list(club_map.keys()),
                     help="⚠️ You must select at least one club"
                 ) # select a group of clubs, this var is used to find eligible groups of clubs later
                 if list_of_club_name:
-                    list_of_club_id = [club_id for club_id, name in club_map.items() if name in list_of_club_name]
+                    list_of_club_id = [club_map[name] for name in list_of_club_name]
                     # Find eligible group ids that match the selected club ids
                     list_of_eligible_group_id = event_utility.get_list_of_eligible_group_id_from_a_set_of_club_id(set(list_of_club_id))
-                    #given an eligible_group_of_club_id, display list of name of club where club_id is in eligible_club_member of that eligible_group_of_club_id. Repeat for all eligible_group_of_club_id in list_of_eligible_group_id
-                    list_of_eligible_club_names = {}
-                    for group_id in list_of_eligible_group_id:
-                        club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(group_id)
-                        list_of_eligible_club_names[group_id] = club_names
-                    # Display info
-                    info_str = "💡 Those are id of eligible groups that include the clubs you selected, please pick one group id:\n"
-                    for group_id, club_names in list_of_eligible_club_names.items():
-                        info_str += f" - Group ID {group_id} : {', '.join(club_names)}\n"
-                    st.info(info_str)
-                    # then let user select one of the eligible_group_of_club_id from the list
-                    eligible_group_id = int(st.selectbox("Eligible Group ID", [str(gid) for gid in list_of_eligible_group_id]))
+                    
+                    if list_of_eligible_group_id:  # Check if list is not empty
+                        #given an eligible_group_of_club_id, display list of name of club where club_id is in eligible_club_member of that eligible_group_of_club_id. Repeat for all eligible_group_of_club_id in list_of_eligible_group_id
+                        list_of_eligible_club_names = {}
+                        for group_id in list_of_eligible_group_id:
+                            club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(group_id)
+                            list_of_eligible_club_names[group_id] = club_names
+                        # Display info
+                        info_str = "💡 Those are id of eligible groups that include the clubs you selected, please pick one group id:\n"
+                        for group_id, club_names in list_of_eligible_club_names.items():
+                            info_str += f" - Group ID {group_id} : {', '.join(club_names)}\n"
+                        st.info(info_str)
+                        # then let user select one of the eligible_group_of_club_id from the list
+                        eligible_group_id = int(st.selectbox("Eligible Group ID", [str(gid) for gid in list_of_eligible_group_id]))
+                    else:
+                        st.warning("⚠️ No eligible groups found for the selected clubs.")
+                        eligible_group_id = None
                 else:
                     # User selected "Select Clubs" but hasn't chosen any clubs yet
                     eligible_group_id = None
                     st.warning("⚠️ Please select at least one club to filter by clubs.")
             else:
-                list_of_club_name = []  # Initialize for "All Clubs" option
                 list_of_eligible_group_id = None
                 eligible_group_id = None # None means all eligible groups
     
@@ -153,9 +170,19 @@ with tab_browse:
                             yearly_championships_df = pd.DataFrame()
                     
                     # Filter by eligible group if specified
-                    if eligible_group_id and not yearly_championships_df.empty:
-                        st.session_state["yearly_championships_df"] = yearly_championships_df[yearly_championships_df['eligible_group_of_club_id'] == eligible_group_id]
-                st.dataframe(st.session_state.get("yearly_championships_df"), use_container_width=True)
+                    if eligible_group_id is not None and not yearly_championships_df.empty:
+                        yearly_championships_df = yearly_championships_df[yearly_championships_df['eligible_group_of_club_id'] == eligible_group_id]
+                    
+                    # Save to session state
+                    st.session_state["yearly_championships_df"] = yearly_championships_df
+                else:
+                    st.session_state["yearly_championships_df"] = pd.DataFrame()
+                
+                # Display the results
+                if not st.session_state.get("yearly_championships_df", pd.DataFrame()).empty:
+                    st.dataframe(st.session_state["yearly_championships_df"], use_container_width=True)
+                else:
+                    st.info("No yearly club championships found matching the filters.")
                     
             elif event_type == "club competition":
                 #apply filter for date range, category_id, eligible_group_id by supabase query
@@ -187,9 +214,20 @@ with tab_browse:
                             # No rounds or event contexts found
                             club_competitions_df = pd.DataFrame()
                     
-                    if eligible_group_id and not club_competitions_df.empty:
-                        st.session_state["club_competitions_df"] = club_competitions_df[club_competitions_df['eligible_group_of_club_id'] == eligible_group_id]
-                st.dataframe(st.session_state.get("club_competitions_df"), use_container_width=True)
+                    # Filter by eligible group if specified
+                    if eligible_group_id is not None and not club_competitions_df.empty:
+                        club_competitions_df = club_competitions_df[club_competitions_df['eligible_group_of_club_id'] == eligible_group_id]
+                    
+                    # Save to session state
+                    st.session_state["club_competitions_df"] = club_competitions_df
+                else:
+                    st.session_state["club_competitions_df"] = pd.DataFrame()
+                
+                # Display the results
+                if not st.session_state.get("club_competitions_df", pd.DataFrame()).empty:
+                    st.dataframe(st.session_state["club_competitions_df"], use_container_width=True)
+                else:
+                    st.info("No club competitions found matching the filters.")
 
 
     # Section 3: Event Hierarchy Visualization
@@ -205,95 +243,82 @@ with tab_browse:
         else:
             available_ids = st.session_state.events_df['club_competition_id'].unique().tolist()
     
-    col1, col2, col3 = st.columns([2, 1, 1])
+    #Section 2
+    hierarchy_event_type = st.selectbox("Event Type ", ["yearly club championship", "club competition"], key="hierarchy_type")
     
-    with col1:
-        hierarchy_event_id = st.number_input("Event ID", min_value=1, step=1, key="hierarchy_event_id")
-    
-    with col2:
-        hierarchy_event_type = st.selectbox("Event Type ", ["yearly_club_championship", "club_competition"], key="hierarchy_type")
-    
-    with col3:
-        visualize_btn = st.button("🎨 Visualize", type="primary")
-    
-    if visualize_btn and hierarchy_event_id:
-        with st.spinner("Loading hierarchy data..."):
-            hierarchy_data = event_utility.get_event_hierarchy(hierarchy_event_id, hierarchy_event_type)
+    # Use search bar for event name
+    if hierarchy_event_type == 'yearly club championship':
+        yearly_championship_map = event_utility.get_yearly_club_championship_map()
+        event_name = st.selectbox(
+            "🔍 Search Yearly Club Championship",
+            options=list(yearly_championship_map.keys()),
+            help="Select a yearly club championship to visualize its hierarchy"
+        )
+        hierarchy_event_id = yearly_championship_map[event_name]
+    else:
+        club_competition_map = event_utility.get_club_competition_map()
+        event_name = st.selectbox(
+            "🔍 Search Club Competition",
+            options=list(club_competition_map.keys()),
+            help="Select a club competition to visualize its hierarchy"
+        )
+        hierarchy_event_id = club_competition_map[event_name]
         
-        if hierarchy_data:
-            # Prepare data for icicle chart
-            ids = []
-            labels = []
-            parents = []
-            
-            # Root
-            root_id = f"Event_{hierarchy_event_id}"
-            ids.append(root_id)
-            labels.append(f"Event {hierarchy_event_id}")
-            parents.append("")
-            
-            # Build hierarchy
-            for item in hierarchy_data:
-                comp_id = f"Comp_{item['club_competition_id']}"
-                round_id = f"Round_{item['round_id']}_Comp_{item['club_competition_id']}"
-                range_id = f"Range_{item['range_id']}_Round_{item['round_id']}"
-                end_id = f"End_{item['end_order']}_Range_{item['range_id']}_Round_{item['round_id']}"
-                
-                # Add competition if not already added
-                if comp_id not in ids:
-                    ids.append(comp_id)
-                    labels.append(f"Competition {item['club_competition_id']}")
-                    parents.append(root_id)
-                
-                # Add round if not already added
-                if round_id not in ids:
-                    ids.append(round_id)
-                    labels.append(item['round_name'])
-                    parents.append(comp_id)
-                
-                # Add range if not already added
-                if range_id not in ids:
-                    ids.append(range_id)
-                    labels.append(f"Range: {item['range_distance']}m")
-                    parents.append(round_id)
-                
-                # Add end
-                if end_id not in ids:
-                    ids.append(end_id)
-                    labels.append(f"End {item['end_order']}")
-                    parents.append(range_id)
-            
-            # Create icicle chart
-            fig = go.Figure(go.Icicle(
-                ids=ids,
-                labels=labels,
-                parents=parents,
-                root_color="lightblue",
-                tiling=dict(
-                    orientation='h',
-                    pad=0
-                ),
-                branchvalues="total"
-            ))
-            
-            fig.update_layout(
-                title=f'Event Hierarchy for {hierarchy_event_type.replace("_", " ").title()} {hierarchy_event_id}',
-                margin=dict(t=80, l=25, r=25, b=25),
-                height=600
+    visualize_btn = st.button("🎨 Show Hierarchy", type="primary")
+    
+    if visualize_btn:
+        with st.spinner("Building hierarchy visualization..."):
+            # Get hierarchy data using utility function
+            hierarchy_df = event_utility.get_event_hierarchy_for_icicle(
+                event_type=hierarchy_event_type,
+                event_id=hierarchy_event_id
             )
             
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning(f"No hierarchy data found for this event.")
-            st.info(f"🔍 Searched for: {hierarchy_event_type} with ID = {hierarchy_event_id}")
-            st.info("💡 Tip: Make sure the Event ID exists and matches the selected Event Type. Check the filtered events table above for valid IDs.")
+            if not hierarchy_df.empty:
+                # Create icicle chart using graph_objects for better control
+                fig = go.Figure()
+                
+                fig.add_trace(go.Icicle(
+                    ids=hierarchy_df['ids'],
+                    labels=hierarchy_df['labels'],
+                    parents=hierarchy_df['parents'],
+                    customdata=hierarchy_df[['hover_info']] if 'hover_info' in hierarchy_df.columns else None,
+                    hovertemplate='<b>%{label}</b><br>%{customdata[0]}<extra></extra>' if 'hover_info' in hierarchy_df.columns else '<b>%{label}</b><extra></extra>',
+                    textinfo="label",  # Only show label, no percentages
+                    textposition="middle center",  # Center text in boxes
+                    root_color="lightblue",
+                    tiling=dict(
+                        orientation='h'  # Horizontal orientation (children span parent height)
+                    ),
+                    textfont=dict(size=16)  # Bigger font size
+                ))
+                
+                fig.update_layout(
+                    title=f"Event Hierarchy: {event_name}",
+                    margin=dict(t=80, l=25, r=25, b=25),
+                    height=700,
+                    font=dict(size=14)
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add instructions
+                st.info("💡 **Interactive Chart**: Click on any block to zoom in and explore deeper levels. Click on the parent (top bar) to zoom out. Hover over blocks to see more information. The deepest children are always **End**.")
+                
+                # Display data summary
+                with st.expander("📊 Hierarchy Data Summary"):
+                    st.write(f"**Total nodes**: {len(hierarchy_df)}")
+                    st.write(f"**Hierarchy levels**: {hierarchy_df['level'].max() + 1}")
+                    st.dataframe(hierarchy_df, use_container_width=True)
+            else:
+                st.warning("No hierarchy data found for this event. The event may not have any rounds or competitions configured.")
     
+
 
 # Tab 2: Event Enrollment/Withdraw
 with tab_enroll:
     yearly_club_championship_map = event_utility.get_yearly_club_championship_map()
     club_competition_map = event_utility.get_club_competition_map()
-    round_map = event_utility.get_round_map()
     st.header("Event Enrollment / Withdraw")
     if user_role not in ["archer", "recorder"]:
         st.info("⚠️ Only archers and recorders can submit event enrollment or withdrawal requests.")
@@ -316,7 +341,7 @@ with tab_enroll:
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
                 else:
-                    club_competition_name = st.selectbox("club competition*", list(club_competition_map.values()))
+                    club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
@@ -337,6 +362,19 @@ with tab_enroll:
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
+        #find creator of the event to set as reviewer by looks at "creator_id" field in yearly_club_championship or club_competition table
+        if apply_for_option == "yearly club championship":
+            event_creator = supabase.table("yearly_club_championship").select("creator_id").eq("yearly_club_championship_id", yearly_club_championship_id).execute().data
+            if event_creator:
+                reviewer_id = event_creator[0]['creator_id']
+            else:
+                reviewer_id = None
+        else:
+            event_creator = supabase.table("club_competition").select("creator_id").eq("club_competition_id", club_competition_id).execute().data
+            if event_creator:
+                reviewer_id = event_creator[0]['creator_id']
+            else:
+                reviewer_id = None
         submit_button = st.form_submit_button("📤 Submit Request")
         if submit_button:
             try:
@@ -346,8 +384,13 @@ with tab_enroll:
                     "action": action,
                     "yearly_club_championship_id": yearly_club_championship_id,
                     "club_competition_id": club_competition_id,
-                    "sender_word": sender_word
+                    "sender_word": sender_word,
+                    "status": "pending",
+                    "reviewer_word": "waiting for reviewing",
+                    "reviewed_by": reviewer_id
                 }).execute()
+
+
             except Exception as e:
                 print(f"Error submitting form: {e}")
     # Tab 2.2: View My Forms

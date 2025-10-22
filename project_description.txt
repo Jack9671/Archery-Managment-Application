@@ -1,4 +1,4 @@
-          –Autralian_Archery_Club_Mangement_Project–
+      –Autralian_Archery_Club_Mangement_Project–
 I: Terminology to know:
 Event: a general term for a yearly club championship or a club competition.
 AAF: Australia Archery Federation.
@@ -57,27 +57,27 @@ This section lists the name of each page and brief description of each page, we 
 Sign Up / Log in Page: used to register new accounts for the application and choose one out of 2 roles (archer or recorder). use email and password to log in.
 
 Admin Page: 
-3.1 used to manage user accounts.
-3.2 view account reports in account_report table and make decisions.
-3.3 admin can sort accounts or reports using parameters.
+ used to manage user accounts.
+ view account reports in account_report table and make decisions.
+ admin can sort accounts or reports using parameters.
 
 Event Page: 
-5.1 used to browse through events and get information to submit club competition request forms to be a participant in that round in that competition as an archer.
-5.2 used to submit forms to be a member to record in that yearly club championship or a club competition as a recorder. A creator of an event can make decisions to accept or not.
+ used to browse through events and get information to submit club competition request forms to be a participant in that round in that competition as an archer.
+ used to submit forms to be a member to record in that yearly club championship or a club competition as a recorder. A creator of an event can make decisions to accept or not.
  
 Score Tracking Page: used by participants to fill out scores and used by recorders to check arrow-by-arrow scores.  
 
 Performance Page: used to browse through personal, others’ personal, and community performance.
-9.1  For each round in a club competition, using total score, ranking, percentile for each participant for that round in the event.
-9.2 For same round played by all competitions that form part of a yearly club championship, using ranking, normalized average score (seeing how well an archer performs on that round during a yearly club championship).
-9.3  For category, using category_rating_percentile table to get each archer percentile for that category.
+ For each round in a club competition, using total score, ranking, percentile for each participant for that round in the event.
+ For same round played by all competitions that form part of a yearly club championship, using ranking, normalized average score (seeing how well an archer performs on that round during a yearly club championship).
+ For category, using category_rating_percentile table to get each archer percentile for that category.
 
 Category Page: used to browse through types of bow and observe which round uses that bow; used to browse through disciplines and read descriptions to understand what that discipline is for; and used to see all official available age divisions. used to add options for recorders to select when designing competition.
 
 Club Page: 
-8.1 used to browse information from a club to find a suitable club to enrol as an archer; used to create a club as an archer.
-8.2 used to view members of a club and information of a club in “my club” tab, if an archer is the creator, then the archer has the right to kick members out. Archers can find a club to write a club enrollment here.
-8.3 used by archers who are creators of clubs to make decisions to accept by setting status to “eligible”.
+ used to browse information from a club to find a suitable club to enrol as an archer; used to create a club as an archer.
+ used to view members of a club and information of a club in “my club” tab, if an archer is the creator, then the archer has the right to kick members out. Archers can find a club to write a club enrollment here.
+ used by archers who are creators of clubs to make decisions to accept by setting status to “eligible”.
 
 Chatbot Assistant Page: Chat GPT- like interface that answers questions based on data in the database, the data AI can access depends on the role of the account. There can be multiple conversations, accounts can choose to delete conversations.
 
@@ -115,7 +115,7 @@ Section 1: Let accounts, regardless of actors, configure filter using input widg
 Case 1: records are rows from yearly_club_championship table if filter chooses option “yearly club championship”.
  Case 2: records are rows following from club_competition table if filter chooses option “club competition” ) and records satisfy the following criteria: records are club competitions that are not linked or form part of any club championship. 
 The returned records are displayed using st.dataframe().
-Section 2: users get the id of a yearly club championship or a club competition from section 1, then let users input that id into a search bar → the id is passed to supabase.rpc() as an argument → the the rpc returns hierarchical data → the hierarchical data then is manipulated using pandas and displayed using plotly.express.icicle(). The .icicle() makes the chart interactive, viewers can zoom in or zoom out per each level in the hierarchy, viewers can see more information when hovering on each block, see Icicle charts in Python. 
+Section 2: users get the name of a yearly club championship or a club competition from section 1, then let users input that name into a search bar → internally mapping name to id -> the id is passed to supabase.rpc() as an argument → the the rpc returns hierarchical data → the hierarchical data then is manipulated using pandas and displayed using plotly.express.icicle(). The .icicle() makes the chart interactive, viewers can zoom in or zoom out per each level in the hierarchy, viewers can see more information when hovering on each block, see Icicle charts in Python. 
 The deepest children are always End.
 If the flow belongs to case 1, then here is an example of an icicle chart. 
 
@@ -136,8 +136,8 @@ Case1: if account role = archer or non-creator recorder, then use st.dataframe()
 Case2: if account’s role = recorder and recorder is a creator, then use st.data_editor() to not only display records (forms) but also enable accounts to update status of forms to accept or refuse → after editing one forms or multiple forms by updating status, click the “confirm” button → in order to push the update to database, we scan for edited records (forms) by comparing new modified dataframe of records from dataframe of original records initially displayed after applying filter → get form_id and new status of all records that have been edited → passes to supabase.__ to update the database.
 
 Tab 3: Event Schedule
-Let users, any actor,  input a club competition id→ click “search” → pass to superbase.__
-to get filtered records (rounds of that club competition id ) from round_schedule table → use plotly.figurefactory and plotly.graphobjects to generate a gantt chart from filtered records 
+Let users, any actor,  input a club competition name→ click “search” → internally mapping name to id → pass id to superbase.__
+to get filtered records (rounds of that club competition id ) from round_schedule table → use plotly.figurefactory and plotly.graphobjects to generate a gantt chart from filtered records.
 
 Tab 4: Event Management
 Tab 4.1: Creating Event
@@ -155,30 +155,30 @@ Firstly, creator recorders configure filter→ pass to superbase() to get filter
     4. Score Tracking Page:
         Only accessed by Archer and Recorder.
 	4.1 Tab 1: Score Tracking For Archer
-For Archer, using input widgets to enter club_competition_id, round_id of the club competition they have been applied for. No need to enter participating_id as st.session.state() automatically stores that→ pass those id (participating_id, club_competition_id, round_id) to superbase.__ to retrieve only records in that matches with (club_competition_id, round_id, participating_id)→ returned filtered records from participating table → using st.data_editor() to display and let archers edit them, only allowed to edit score field from 1st to 6th arrows, cannot edit score field once status has been set to “eligible” by Recorder → Click “confirm update” button → using the approach (scanning) mentioned above to push the update to the database.
+For Archer, using input widgets to enter club_competition_name, round_name of the club competition they have been applied for. No need to enter participating_name as st.session.state() automatically stores that→ internally map name to id → pass those id (participating_id, club_competition_id, round_id) to superbase.__ to retrieve only records in that matches with (club_competition_id, round_id, participating_id)→ returned filtered records from participating table → using st.data_editor() to display and let archers edit them, only allowed to edit score field from 1st to 6th arrows, cannot edit score field once status has been set to “eligible” by Recorder → Click “confirm update” button → using the approach (scanning) mentioned above to push the update to the database.
 	4.2 Tab 2: Score Tracking for Recorder
-For Recorder, using input widgets to enter club_competition_id, round_id (optional, leave “empty” if want to display all rounds in a club competition), participating_id  (optional, leave “empty” if want to see all participants →  pass inputs to superbase.__ retrieve only records in that matches with the filter configuration  →  returned filtered records from participating table → using st.data_editor() to display and let archers edit them, only allowed to edit status field and score field from 1st to 6th arrows → Click “confirm update” button → using the approach (scanning) mentioned above to push the update to the database.
+For Recorder, using input widgets to enter name of club competition, and name of round (optional, leave “empty” if want to display all rounds in a club competition), name of participant  (optional, leave “empty” if want to see all participants → internally map name to id →  pass inputs to superbase.__ retrieve only records in that matches with the filter configuration  →  returned filtered records from participating table → using st.data_editor() to display and let archers edit them, only allowed to edit status field and score field from 1st to 6th arrows → Click “confirm update” button → using the approach (scanning) mentioned above to push the update to the database.
     5. Performance Page:
 All actors can access this page.
-6.1 Tab 1: View sum score
+Tab 1: View sum score
 Users need to enter information to configure the score viewing option. 
 The configuration is as follows: Getting chosen option for viewing score [ “per end”, “per range”, “per round”, “average for round in a yearly club championship”]. The “average for round in a yearly club championship” option simply means a yearly normalized average score for the same round played in multiple club competitions in a yearly club championship (see formula in part I “Terminology”)
-If users choose among 3 options  [ “per end”, “per range”, “per round”] → they need to enter participating_id (optional, leave “empty” if wanting to see scores with type = "competition" of all participants), club_competition_id (also allowing club_competition_id that forms part of a yearly club championship ).
-Else if users choose option [“average for round in a yearly club championship”] → then they need to enter  participating_id (optional, leave “empty” if wanting to see scores with type = "competition" of all participants), yearly_club_championship. → clicking “apply score configuration” → Passing the score configuration to superbase.__ to apply filter, groupby, pivot table to retrieve records → displaying records using st.dataframe()
-6.2 Tab 2: Ranking 
+If users choose among 3 options  [ “per end”, “per range”, “per round”] → they need to enter name of participant (optional, leave “empty” if wanting to see scores with type = "competition" of all participants), name of club competition (also allowing club competition  that forms part of a yearly club championship ).
+Else if users choose option [“average for round in a yearly club championship”] → then they need to enter name of  participating (optional, leave “empty” if wanting to see scores with type = "competition" of all participants), name of yearly club championship. → clicking “apply score configuration” → Internally mapping name to id → Passing the score configuration to superbase.__ to apply filter, groupby, pivot table to retrieve records → displaying records using st.dataframe()
+ Tab 2: Ranking 
 Only apply ranking for participants in rounds in yearly club championships and club competitions where today has passed “year” field in yearly_club_championship table or “date_end” in club_competition table to guarantee correctness.
 Let users choose one among 3 options [“view ranking in a round in a club competition”, “view ranking in the same rounds played by multiple club competition in a yearly club championship”, “view global rating percentile per category”].
 If users choose option 1 “view ranking in a round in a club competition:
-Let users input club_competition_id (also allowing club_competition_id that forms part of a yearly club championship), round_id → click “confirm” button → passing those id to superbase.__ → getting filtered records from the participating table → use pandas to manipulate data (records) → use plotly.express.bar() to generate a horizontal bar chart where the highest value is displayed in the top and lowest value is displayed at the bottom. Each bar is the total score in that round attained by a participant. 
+Let users input name of club competition (also allowing name of club competition that forms part of a yearly club championship), name of round → click “confirm” button → internally mapping name to id → passing those id to superbase.__ → getting filtered records from the participating table → use pandas to manipulate data (records) → use plotly.express.bar() to generate a horizontal bar chart where the highest value is displayed in the top and lowest value is displayed at the bottom. Each bar is the total score in that round attained by a participant. 
 Here is an example of a sorted horizontal bar chart:  
  
   
  If users choose option 2 “view ranking in the same rounds played by multiple club competitions in a yearly club championship”. 
-Let users input a yearly_club_championship_id, a round_id → click “confirm” button → passing those id to superbase.__ → getting filtered records from the participating table → use pandas to manipulate data (records) → use plotly.express.bar() to generate a horizontal bar chart where the highest value is displayed in the top and lowest value is displayed at the bottom. Each bar is a yearly normalized average score for the same round played in multiple club competitions in a yearly club championship. (see formula in part I “Terminology”)
+Let users input name of yearly club championship, name of round → internally mapping name to id → click “confirm” button → passing those id to superbase.__ → getting filtered records from the participating table → use pandas to manipulate data (records) → use plotly.express.bar() to generate a horizontal bar chart where the highest value is displayed in the top and lowest value is displayed at the bottom. Each bar is a yearly normalized average score for the same round played in multiple club competitions in a yearly club championship. (see formula in part I “Terminology”)
 Here is an example of a sorted horizontal bar chart
  
 If users choose option 3 “view global rating percentile per category”.
-Let users input archer_id, category_id → click “confirm” button → passing those id to superbase.__ → getting filtered records from the participating table and category_rating_percentile tables → use pandas to manipulate data (records) → use plotly.express.area() or plotly.express.histogram() to generate area line chart to show distribution of archers’ c_(archer_id). The formula for calculating percentile of an archer in that category is similar to percentile calculated from global category-specific elo rating in chess. For ex: in chess, we have 50 percentile in bliz chess, 10 percentile in classic chess ,... categories.
+Let users input archer name category name → click “confirm” button → passing those id to superbase.__ → internally mapping name to id → getting filtered records from the participating table and category_rating_percentile tables → use pandas to manipulate data (records) → use plotly.express.area() or plotly.express.histogram() to generate area line chart to show distribution of archers’ c_(archer_id). The formula for calculating percentile of an archer in that category is similar to percentile calculated from global category-specific elo rating in chess. For ex: in chess, we have 50 percentile in blitz chess, 10 percentile in classic chess ,... categories.
     90 percentile means the archer id performs better than 90% of archers played in that category
     formula: 
     n_(archer_id): number of rounds of that category that were played by the archer id
@@ -194,19 +194,19 @@ Let users input archer_id, category_id → click “confirm” button → passin
 
    6. Category Page:
     If role = “AAF member”
-            6.1 Tab 1: Round (insertable)
+             Tab 1: Round (insertable)
 Add new round in round table.
-6.2 Tab 2: Equivalent Round (insertable)
+ Tab 2: Equivalent Round (insertable)
 Choose a round y to be equivalent with another round x in the round_equivalent table from what datetime to what datetime. Note that round y is selected from a filtered set of rounds where category_id of round y = category_id of round x.
-6.3 Tab 3: Range (insertable):
+ Tab 3: Range (insertable):
 Add new range in range table.
-6.4 Tab 4: Target Face (insertable)
+ Tab 4: Target Face (insertable)
 Add new target face in target_face table.
-6.5 Tab 5: Discipline (insertable)
+ Tab 5: Discipline (insertable)
 Add new discipline in discipline table.
-6.6 Tab 6: Age Division (insertable)
+ Tab 6: Age Division (insertable)
            Add new age_division in age_division table.
-6.7 Tab 7: Equipment (insertable)
+ Tab 7: Equipment (insertable)
  	Add new equipment in equipment table.
   Else: 
  	There are also 7 tabs displaying records using st.dataframe() to let users view only. Also rendering Equipment pictures from superbase storage

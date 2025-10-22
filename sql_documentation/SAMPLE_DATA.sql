@@ -45,28 +45,27 @@ VALUES
 -- 2. ROLE-SPECIFIC TABLES
 -- ============================================
 
-INSERT INTO admin (admin_id) VALUES (1);
+INSERT INTO admin (admin_id, created_at) VALUES (1, NOW());
 
-INSERT INTO australia_archery_federation (member_id) VALUES (2), (3);
+INSERT INTO australia_archery_federation (member_id, created_at) VALUES (2, NOW()), (3, NOW());
 
 INSERT INTO recorder (recorder_id, year_of_experience, about_recorder)
 VALUES 
 (4, 8, 'Experienced recorder specializing in outdoor target archery. Certified level 3 judge.'),
 (5, 5, 'Passionate about field archery competitions. Detail-oriented and reliable.'),
-(6, 3, 'New to recording but enthusiastic. Background in sports management.'),
-;
+(6, 3, 'New to recording but enthusiastic. Background in sports management.');
 
 -- ============================================
 -- 3. EQUIPMENT
 -- ============================================
 
-INSERT INTO equipment ( name, description)
+INSERT INTO equipment ( name, description, created_at)
 VALUES 
-( 'Recurve Bow', 'Olympic-style recurve bow, officially recognized by World Archery and Australian Archery Federation'),
-( 'Compound Bow', 'Modern compound bow with cams and pulleys for mechanical advantage'),
-( 'Barebow', 'Traditional bow without sights or stabilizers, shooting instinctively'),
-( 'Longbow', 'Traditional English longbow, straight-limbed design'),
-( 'Crossbow', 'Horizontal bow mounted on a stock, used in specialized competitions');
+( 'Recurve Bow', 'Olympic-style recurve bow, officially recognized by World Archery and Australian Archery Federation', NOW()),
+( 'Compound Bow', 'Modern compound bow with cams and pulleys for mechanical advantage', NOW()),
+( 'Barebow', 'Traditional bow without sights or stabilizers, shooting instinctively', NOW()),
+( 'Longbow', 'Traditional English longbow, straight-limbed design', NOW()),
+( 'Crossbow', 'Horizontal bow mounted on a stock, used in specialized competitions', NOW());
 
 -- ============================================
 -- 4. ARCHERS (with equipment)
@@ -93,12 +92,12 @@ VALUES
 -- 5. CLUBS
 -- ============================================
 
-INSERT INTO club ( name, creator_id, min_age_to_join, max_age_to_join, open_to_join, formation_date, about_club, club_logo_url)
+INSERT INTO club ( name, creator_id, min_age_to_join, max_age_to_join, open_to_join, about_club, club_logo_url, created_at, updated_at)
 VALUES 
-('Sydney Archery Club', 7, 12, 70, true, '2010-03-15', 'Premier archery club in Sydney offering training for all skill levels. We have indoor and outdoor ranges.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/sydney_club.jpg'),
-('Melbourne Arrows', 10, 10, 75, true, '2008-06-20', 'Friendly community club focused on outdoor target archery and field archery.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/melbourne_club.jpg'),
-('Brisbane Bowmen', 14, 15, 65, true, '2015-09-10', 'Competitive club with strong junior development program.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/brisbane_club.jpg'),
-('Perth Precision Archers', 16, 18, 70, false, '2012-11-05', 'Elite club for advanced archers. Membership by application only.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/perth_club.jpg');
+('Sydney Archery Club', 7, 12, 70, true, 'Premier archery club in Sydney offering training for all skill levels. We have indoor and outdoor ranges.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/sydney_club.jpg', NOW(), NOW()),
+('Melbourne Arrows', 10, 10, 75, true, 'Friendly community club focused on outdoor target archery and field archery.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/melbourne_club.jpg', NOW(), NOW()),
+('Brisbane Bowmen', 14, 15, 65, true, 'Competitive club with strong junior development program.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/brisbane_club.jpg', NOW(), NOW()),
+('Perth Precision Archers', 16, 18, 70, false, 'Elite club for advanced archers. Membership by application only.', 'https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Club_Logo/perth_club.jpg', NOW(), NOW());
 
 -- Update archers with club memberships
 UPDATE archer SET club_id = 1 WHERE archer_id IN (7, 8, 9);
@@ -110,138 +109,138 @@ UPDATE archer SET club_id = 4 WHERE archer_id IN (15, 16);
 -- 6. DISCIPLINES
 -- ============================================
 
-INSERT INTO discipline ( name, description)
+INSERT INTO discipline ( name, description, created_at)
 VALUES 
-('Outdoor Target Archery', 'Shooting at fixed stationary targets outdoors at known distances. Standard World Archery format.'),
-( 'Indoor Target Archery', 'Precision shooting indoors at 18m or 25m distances with smaller target faces.'),
-('Field Archery', 'Moving through natural terrain courses with targets at various distances and angles.'),
-('Clout Archery', 'Long-distance discipline shooting at ground targets with concentric scoring zones.'),
-('Para-Archery', 'Archery for athletes with disabilities, with classifications and allowed adaptations.');
+('Outdoor Target Archery', 'Shooting at fixed stationary targets outdoors at known distances. Standard World Archery format.', NOW()),
+( 'Indoor Target Archery', 'Precision shooting indoors at 18m or 25m distances with smaller target faces.', NOW()),
+('Field Archery', 'Moving through natural terrain courses with targets at various distances and angles.', NOW()),
+('Clout Archery', 'Long-distance discipline shooting at ground targets with concentric scoring zones.', NOW()),
+('Para-Archery', 'Archery for athletes with disabilities, with classifications and allowed adaptations.', NOW());
 
 -- ============================================
 -- 7. AGE DIVISIONS
 -- ============================================
 
-INSERT INTO age_division (min_age, max_age)
+INSERT INTO age_division (min_age, max_age, created_at)
 VALUES 
-( 10, 14),  -- Cub
-( 15, 17),  -- Junior
-( 18, 20),  -- Youth
-( 21, 49),  -- Adult
-( 50, 59),  -- Master
-( 60, 70);  -- Senior Master
+( 10, 14, NOW()),  -- Cub
+( 15, 17, NOW()),  -- Junior
+( 18, 20, NOW()),  -- Youth
+( 21, 49, NOW()),  -- Adult
+( 50, 59, NOW()),  -- Master
+( 60, 70, NOW());  -- Senior Master
 
 -- ============================================
 -- 8. CATEGORIES (Discipline + Age + Equipment)
 -- ============================================
 
-INSERT INTO category (discipline_id, age_division_id, equipment_id)
+INSERT INTO category (discipline_id, age_division_id, equipment_id, created_at)
 VALUES 
 -- Outdoor Target - All ages - Recurve
-( 1, 1, 1),
-( 1, 2, 1),
-( 1, 3, 1),
-( 1, 4, 1),
+( 1, 1, 1, NOW()),
+( 1, 2, 1, NOW()),
+( 1, 3, 1, NOW()),
+( 1, 4, 1, NOW()),
 -- Outdoor Target - All ages - Compound
-( 1, 1, 2),
-( 1, 2, 2),
-( 1, 3, 2),
-( 1, 4, 2),
+( 1, 1, 2, NOW()),
+( 1, 2, 2, NOW()),
+( 1, 3, 2, NOW()),
+( 1, 4, 2, NOW()),
 -- Indoor Target - Adults - Recurve
-( 2, 4, 1),
+( 2, 4, 1, NOW()),
 -- Indoor Target - Adults - Compound
-(2, 4, 2),
+(2, 4, 2, NOW()),
 -- Field Archery - Adults - Barebow
-( 3, 4, 3),
+( 3, 4, 3, NOW()),
 -- Outdoor Target - Adults - Barebow
-( 1, 4, 3);
+( 1, 4, 3, NOW());
 
 -- ============================================
 -- 9. TARGET FACES
 -- ============================================
 
-INSERT INTO target_face ( diameter, unit_of_length)
+INSERT INTO target_face ( diameter, unit_of_length, created_at)
 VALUES 
-( 122, 'cm'),  -- Standard 122cm outdoor target
-( 80, 'cm'),   -- 80cm outdoor target
-( 40, 'cm'),   -- 40cm indoor target
-( 60, 'cm');   -- 60cm target
+( 122, 'cm', NOW()),  -- Standard 122cm outdoor target
+( 80, 'cm', NOW()),   -- 80cm outdoor target
+( 40, 'cm', NOW()),   -- 40cm indoor target
+( 60, 'cm', NOW());   -- 60cm target
 
 -- ============================================
 -- 10. RANGES
 -- ============================================
 
-INSERT INTO range (target_face_id, distance, unit_of_length)
+INSERT INTO range (target_face_id, distance, unit_of_length, created_at)
 VALUES 
-(1, 70, 'm'),   -- 70m Olympic distance
-( 1, 50, 'm'),   -- 50m distance
-( 2, 30, 'm'),   -- 30m distance
-( 3, 18, 'm'),   -- 18m indoor
-( 1, 90, 'm'),   -- 90m long distance
-( 4, 25, 'm');   -- 25m indoor
+(1, 70, 'm', NOW()),   -- 70m Olympic distance
+( 1, 50, 'm', NOW()),   -- 50m distance
+( 2, 30, 'm', NOW()),   -- 30m distance
+( 3, 18, 'm', NOW()),   -- 18m indoor
+( 1, 90, 'm', NOW()),   -- 90m long distance
+( 4, 25, 'm', NOW());   -- 25m indoor
 
 -- ============================================
 -- 11. ROUNDS
 -- ============================================
 
-INSERT INTO round (name, category_id)
+INSERT INTO round (name, category_id, created_at)
 VALUES 
-( 'Olympic Round - Adult Recurve', 4),
-( 'Olympic Round - Youth Recurve', 3),
-( 'Compound 70m Round', 8),
-( 'Indoor 18m Round - Recurve', 9),
-( 'Indoor 18m Round - Compound', 10),
-( 'Field Round - Barebow', 11),
-( 'Barebow 50m Round', 12);
+( 'Olympic Round (Outdoor Target Archery · 21-49 · Recurve Bow)', 4, NOW()),
+( 'Youth Olympic Round (Outdoor Target Archery · 18-20 · Recurve Bow)', 3, NOW()),
+( 'Compound 70m (Outdoor Target Archery · 21-49 · Compound Bow)', 8, NOW()),
+( 'Indoor 18m (Indoor Target Archery · 21-49 · Recurve Bow)', 9, NOW()),
+( 'Indoor 18m Compound (Indoor Target Archery · 21-49 · Compound Bow)', 10, NOW()),
+( 'Field Round (Field Archery · 21-49 · Barebow)', 11, NOW()),
+( 'Barebow 50m (Outdoor Target Archery · 21-49 · Barebow)', 12, NOW());
 
 -- ============================================
 -- 12. EQUIVALENT ROUNDS
 -- ============================================
 
-INSERT INTO equivalent_round (round_id, equivalent_round_id, date_valid_start, date_valud_end)
+INSERT INTO equivalent_round (round_id, equivalent_round_id, date_valid_start, date_valud_end, created_at, updated_at)
 VALUES 
-(1, 2, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00'),
-(2, 1, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00');
+(1, 2, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00', NOW(), NOW()),
+(2, 1, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00', NOW(), NOW());
 
 -- ============================================
 -- 13. ELIGIBLE GROUPS OF CLUBS
 -- ============================================
 
-INSERT INTO eligible_group_of_club (eligible_group_of_club_id)
+INSERT INTO eligible_group_of_club (eligible_group_of_club_id, created_at)
 VALUES 
-(1),  -- Sydney Region Clubs
-(2),  -- National Clubs
-(3);  -- Elite Clubs Only
+(1, NOW()),  -- Sydney Region Clubs
+(2, NOW()),  -- National Clubs
+(3, NOW());  -- Elite Clubs Only
 
-INSERT INTO eligible_club_member (eligible_group_of_club_id, eligible_club_id)
+INSERT INTO eligible_club_member (eligible_group_of_club_id, eligible_club_id, created_at)
 VALUES 
-(1, 1),  -- Sydney Archery Club in Sydney Region
-(2, 1),  -- Sydney in National
-(2, 2),  -- Melbourne in National
-(2, 3),  -- Brisbane in National
-(2, 4),  -- Perth in National
-(3, 4);  -- Perth Elite only
+(1, 1, NOW()),  -- Sydney Archery Club in Sydney Region
+(2, 1, NOW()),  -- Sydney in National
+(2, 2, NOW()),  -- Melbourne in National
+(2, 3, NOW()),  -- Brisbane in National
+(2, 4, NOW()),  -- Perth in National
+(3, 4, NOW());  -- Perth Elite only
 
 -- ============================================
 -- 14. YEARLY CLUB CHAMPIONSHIPS
 -- ============================================
 
-INSERT INTO yearly_club_championship ( name, year, creator_id, eligible_group_of_club_id)
+INSERT INTO yearly_club_championship ( name, year, creator_id, eligible_group_of_club_id, created_at, updated_at)
 VALUES 
-('Australian National Championship 2025', 2025, 4, 2),
-('Sydney Regional Championship 2025', 2025, 5, 1);
+('Australian National Championship 2025', 2025, 4, 2, NOW(), NOW()),
+('Sydney Regional Championship 2025', 2025, 5, 1, NOW(), NOW());
 
 -- ============================================
 -- 15. CLUB COMPETITIONS
 -- ============================================
 
-INSERT INTO club_competition ( name, address, date_start, date_end, creator_id, eligible_group_of_club_id)
+INSERT INTO club_competition ( name, address, date_start, date_end, creator_id, eligible_group_of_club_id, created_at, updated_at)
 VALUES 
-('Summer Open Tournament', '123 Archery Lane, Sydney NSW 2000', '2025-01-15', '2025-01-17', 4, 2),
-( 'Indoor Championship Round 1', '456 Sports Complex, Melbourne VIC 3000', '2025-02-20', '2025-02-20', 5, 2),
-('Sydney Local Cup', '789 Range Road, Sydney NSW 2010', '2025-03-10', '2025-03-11', 6, 1),
-('National Qualifier Stage 1', '321 Olympic Drive, Brisbane QLD 4000', '2025-04-05', '2025-04-07', 4, 2),
-('Spring Field Archery Meet', '555 Forest Path, Perth WA 6000', '2025-05-12', '2025-05-13', 5, 3);
+('Summer Open Tournament', '123 Archery Lane, Sydney NSW 2000', '2025-01-15', '2025-01-17', 4, 2, NOW(), NOW()),
+( 'Indoor Championship Round 1', '456 Sports Complex, Melbourne VIC 3000', '2025-02-20', '2025-02-20', 5, 2, NOW(), NOW()),
+('Sydney Local Cup', '789 Range Road, Sydney NSW 2010', '2025-03-10', '2025-03-11', 6, 1, NOW(), NOW()),
+('National Qualifier Stage 1', '321 Olympic Drive, Brisbane QLD 4000', '2025-04-05', '2025-04-07', 4, 2, NOW(), NOW()),
+('Spring Field Archery Meet', '555 Forest Path, Perth WA 6000', '2025-05-12', '2025-05-13', 5, 3, NOW(), NOW());
 
 -- ============================================
 -- 16. EVENT CONTEXTS
@@ -272,15 +271,15 @@ VALUES
 -- 17. ROUND SCHEDULES
 -- ============================================
 
-INSERT INTO round_schedule (club_competition_id, round_id, datetime_to_start, expected_datetime_to_end)
+INSERT INTO round_schedule (club_competition_id, round_id, datetime_to_start, datetime_to_end, created_at, updated_at)
 VALUES 
-(1, 1, '2025-01-15 09:00:00+00', '2025-01-15 12:00:00+00'),
-(1, 3, '2025-01-15 14:00:00+00', '2025-01-15 17:00:00+00'),
-(2, 4, '2025-02-20 10:00:00+00', '2025-02-20 16:00:00+00'),
-(3, 1, '2025-03-10 09:00:00+00', '2025-03-10 15:00:00+00'),
-(4, 1, '2025-04-05 09:00:00+00', '2025-04-05 13:00:00+00'),
-(4, 3, '2025-04-06 09:00:00+00', '2025-04-06 13:00:00+00'),
-(5, 6, '2025-05-12 08:00:00+00', '2025-05-12 17:00:00+00');
+(1, 1, '2025-01-15 09:00:00+00', '2025-01-15 12:00:00+00', NOW(), NOW()),
+(1, 3, '2025-01-15 14:00:00+00', '2025-01-15 17:00:00+00', NOW(), NOW()),
+(2, 4, '2025-02-20 10:00:00+00', '2025-02-20 16:00:00+00', NOW(), NOW()),
+(3, 1, '2025-03-10 09:00:00+00', '2025-03-10 15:00:00+00', NOW(), NOW()),
+(4, 1, '2025-04-05 09:00:00+00', '2025-04-05 13:00:00+00', NOW(), NOW()),
+(4, 3, '2025-04-06 09:00:00+00', '2025-04-06 13:00:00+00', NOW(), NOW()),
+(5, 6, '2025-05-12 08:00:00+00', '2025-05-12 17:00:00+00', NOW(), NOW());
 
 -- ============================================
 -- 18. RECORDINGS (Recorders assigned to competitions)
@@ -298,30 +297,30 @@ VALUES
 -- 19. PARTICIPATING (Archer scores)
 -- ============================================
 
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, datetime, type, status)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Archer 7 in Competition 1
-(7, '1-1-1-1', 9, 10, 9, 8, 10, 9, 55, '2025-01-15 09:30:00+00', 'competition', 'eligible'),
-(7, '1-1-1-2', 10, 9, 9, 10, 8, 9, 55, '2025-01-15 09:45:00+00', 'competition', 'eligible'),
-(7, '1-1-1-3', 8, 9, 10, 9, 9, 10, 55, '2025-01-15 10:00:00+00', 'competition', 'eligible'),
+(7, '1-1-1-1', 9, 10, 9, 8, 10, 9, 55, 'competition', 'eligible', '2025-01-15 09:30:00+00', '2025-01-15 09:30:00+00'),
+(7, '1-1-1-2', 10, 9, 9, 10, 8, 9, 55, 'competition', 'eligible', '2025-01-15 09:45:00+00', '2025-01-15 09:45:00+00'),
+(7, '1-1-1-3', 8, 9, 10, 9, 9, 10, 55, 'competition', 'eligible', '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00'),
 -- Archer 8 in Competition 1
-(8, '1-1-1-1', 10, 10, 9, 10, 9, 10, 58, '2025-01-15 09:30:00+00', 'competition', 'eligible'),
-(8, '1-1-1-2', 9, 10, 10, 9, 10, 9, 57, '2025-01-15 09:45:00+00', 'competition', 'eligible'),
-(8, '1-1-1-3', 10, 9, 10, 10, 9, 9, 57, '2025-01-15 10:00:00+00', 'competition', 'eligible'),
+(8, '1-1-1-1', 10, 10, 9, 10, 9, 10, 58, 'competition', 'eligible', '2025-01-15 09:30:00+00', '2025-01-15 09:30:00+00'),
+(8, '1-1-1-2', 9, 10, 10, 9, 10, 9, 57, 'competition', 'eligible', '2025-01-15 09:45:00+00', '2025-01-15 09:45:00+00'),
+(8, '1-1-1-3', 10, 9, 10, 10, 9, 9, 57, 'competition', 'eligible', '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00'),
 -- Archer 10 in Competition 1 (compound)
-(10, '1-3-2-1', 10, 10, 10, 9, 10, 10, 59, '2025-01-15 14:30:00+00', 'competition', 'eligible'),
-(10, '1-3-2-2', 10, 9, 10, 10, 10, 9, 58, '2025-01-15 14:45:00+00', 'competition', 'eligible'),
+(10, '1-3-2-1', 10, 10, 10, 9, 10, 10, 59, 'competition', 'eligible', '2025-01-15 14:30:00+00', '2025-01-15 14:30:00+00'),
+(10, '1-3-2-2', 10, 9, 10, 10, 10, 9, 58, 'competition', 'eligible', '2025-01-15 14:45:00+00', '2025-01-15 14:45:00+00'),
 -- Archer 12 in Competition 2 (indoor)
-(12, '2-4-4-1', 10, 9, 10, 10, 9, 10, 58, '2025-02-20 10:30:00+00', 'competition', 'eligible'),
-(12, '2-4-4-2', 9, 10, 9, 10, 10, 9, 57, '2025-02-20 11:00:00+00', 'competition', 'eligible'),
+(12, '2-4-4-1', 10, 9, 10, 10, 9, 10, 58, 'competition', 'eligible', '2025-02-20 10:30:00+00', '2025-02-20 10:30:00+00'),
+(12, '2-4-4-2', 9, 10, 9, 10, 10, 9, 57, 'competition', 'eligible', '2025-02-20 11:00:00+00', '2025-02-20 11:00:00+00'),
 -- Archer 13 in Competition 2 (indoor compound)
-(13, '2-4-4-1', 10, 10, 10, 10, 9, 10, 59, '2025-02-20 10:30:00+00', 'competition', 'eligible'),
-(13, '2-4-4-2', 10, 10, 9, 10, 10, 10, 59, '2025-02-20 11:00:00+00', 'competition', 'eligible'),
+(13, '2-4-4-1', 10, 10, 10, 10, 9, 10, 59, 'competition', 'eligible', '2025-02-20 10:30:00+00', '2025-02-20 10:30:00+00'),
+(13, '2-4-4-2', 10, 10, 9, 10, 10, 10, 59, 'competition', 'eligible', '2025-02-20 11:00:00+00', '2025-02-20 11:00:00+00'),
 -- Archer 14 in Competition 3
-(14, '3-1-1-1', 10, 9, 10, 9, 10, 9, 57, '2025-03-10 09:30:00+00', 'competition', 'eligible'),
-(14, '3-1-1-2', 9, 10, 10, 10, 9, 10, 58, '2025-03-10 10:00:00+00', 'competition', 'eligible'),
+(14, '3-1-1-1', 10, 9, 10, 9, 10, 9, 57, 'competition', 'eligible', '2025-03-10 09:30:00+00', '2025-03-10 09:30:00+00'),
+(14, '3-1-1-2', 9, 10, 10, 10, 9, 10, 58, 'competition', 'eligible', '2025-03-10 10:00:00+00', '2025-03-10 10:00:00+00'),
 -- Archer 16 (professional) in Competition 4
-(16, '4-3-2-1', 10, 10, 10, 10, 10, 9, 59, '2025-04-06 09:30:00+00', 'competition', 'eligible');
+(16, '4-3-2-1', 10, 10, 10, 10, 10, 9, 59, 'competition', 'eligible', '2025-04-06 09:30:00+00', '2025-04-06 09:30:00+00');
 
 -- ============================================
 -- 20. CATEGORY RATING PERCENTILES
@@ -347,7 +346,7 @@ VALUES
 -- Competition Request Forms
 -- NOTE: All accounts 4-16 now exist in BOTH archer and recorder tables to satisfy dual FK constraints
 
-INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, create_at, updated_at)
+INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
 VALUES 
 -- Archers applying to participate
 (7, 'participating', 'enrol', 1, 1, 1, 'I would like to participate in the Olympic Round. I have been training hard.', 'eligible', 'Application approved. Welcome!', 4, '2025-01-01 10:00:00+00', '2025-01-02 14:00:00+00'),
@@ -359,11 +358,11 @@ VALUES
 (4, 'recording', 'enrol', 2, 3, NULL, 'I would like to record for the Sydney Local Cup', 'eligible', 'Approved!', 6, '2025-02-25 10:00:00+00', '2025-02-26 15:00:00+00');
 
 -- Club Enrollment Forms
-INSERT INTO club_enrollment_form (form_id, sender_id, sender_word, status, club_id, club_creator_word, create_at, updated_at)
+INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)
 VALUES 
-(1, 9, 'I am a beginner looking to join and learn from experienced archers.', 'eligible', 1, 'Welcome to Sydney Archery Club! We look forward to training with you.', '2024-12-01 10:00:00+00', '2024-12-03 14:00:00+00'),
-(2, 11, 'Interested in joining for barebow training opportunities.', 'eligible', 2, 'Approved! Welcome to Melbourne Arrows.', '2024-11-15 09:00:00+00', '2024-11-17 16:00:00+00'),
-(3, 15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2025-01-10 11:00:00+00', '2025-01-10 11:00:00+00');
+(9, 'I am a beginner looking to join and learn from experienced archers.', 'eligible', 1, 'Welcome to Sydney Archery Club! We look forward to training with you.', '2024-12-01 10:00:00+00', '2024-12-03 14:00:00+00'),
+(11, 'Interested in joining for barebow training opportunities.', 'eligible', 2, 'Approved! Welcome to Melbourne Arrows.', '2024-11-15 09:00:00+00', '2024-11-17 16:00:00+00'),
+(15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2025-01-10 11:00:00+00', '2025-01-10 11:00:00+00');
 
 
 -- ============================================
@@ -380,18 +379,18 @@ VALUES
 -- 26. ADDITIONAL PARTICIPATING RECORDS (Practice)
 -- ============================================
 
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, datetime, type, status)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Practice rounds for various archers (using different event contexts to avoid duplicates)
-(7, '1-1-1-2', 8, 9, 8, 9, 8, 7, 49, '2024-12-20 10:00:00+00', 'practice', 'eligible'),
-(7, '1-1-1-3', 9, 8, 9, 8, 9, 9, 52, '2024-12-22 10:00:00+00', 'practice', 'eligible'),
-(8, '1-1-1-2', 9, 10, 9, 9, 10, 8, 55, '2024-12-21 14:00:00+00', 'practice', 'eligible'),
-(8, '1-1-1-3', 10, 9, 10, 9, 9, 10, 57, '2024-12-23 14:00:00+00', 'practice', 'eligible'),
-(10, '1-3-2-2', 10, 10, 9, 10, 9, 10, 58, '2024-12-15 11:00:00+00', 'practice', 'eligible'),
-(12, '2-4-4-2', 9, 9, 10, 9, 8, 9, 54, '2025-02-10 13:00:00+00', 'practice', 'eligible'),
-(13, '2-4-4-2', 10, 9, 10, 10, 9, 10, 58, '2025-02-11 13:00:00+00', 'practice', 'eligible'),
-(14, '3-1-1-2', 9, 10, 9, 10, 9, 9, 56, '2025-02-28 10:00:00+00', 'practice', 'eligible'),
-(16, '4-3-2-1', 10, 10, 10, 9, 10, 10, 59, '2025-03-25 09:00:00+00', 'practice', 'eligible');
+(7, '1-1-1-2', 8, 9, 8, 9, 8, 7, 49, 'practice', 'eligible', '2024-12-20 10:00:00+00', '2024-12-20 10:00:00+00'),
+(7, '1-1-1-3', 9, 8, 9, 8, 9, 9, 52, 'practice', 'eligible', '2024-12-22 10:00:00+00', '2024-12-22 10:00:00+00'),
+(8, '1-1-1-2', 9, 10, 9, 9, 10, 8, 55, 'practice', 'eligible', '2024-12-21 14:00:00+00', '2024-12-21 14:00:00+00'),
+(8, '1-1-1-3', 10, 9, 10, 9, 9, 10, 57, 'practice', 'eligible', '2024-12-23 14:00:00+00', '2024-12-23 14:00:00+00'),
+(10, '1-3-2-2', 10, 10, 9, 10, 9, 10, 58, 'practice', 'eligible', '2024-12-15 11:00:00+00', '2024-12-15 11:00:00+00'),
+(12, '2-4-4-2', 9, 9, 10, 9, 8, 9, 54, 'practice', 'eligible', '2025-02-10 13:00:00+00', '2025-02-10 13:00:00+00'),
+(13, '2-4-4-2', 10, 9, 10, 10, 9, 10, 58, 'practice', 'eligible', '2025-02-11 13:00:00+00', '2025-02-11 13:00:00+00'),
+(14, '3-1-1-2', 9, 10, 9, 10, 9, 9, 56, 'practice', 'eligible', '2025-02-28 10:00:00+00', '2025-02-28 10:00:00+00'),
+(16, '4-3-2-1', 10, 10, 10, 9, 10, 10, 59, 'practice', 'eligible', '2025-03-25 09:00:00+00', '2025-03-25 09:00:00+00');
 
 -- ============================================
 -- 27. MORE COMPETITION EVENTS FOR TESTING
@@ -411,30 +410,30 @@ VALUES
 ('4-1-1-3', 1, 4, 1, 1, 3);
 
 -- Add more participating records for these events
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, datetime, type, status)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Archer 7 continuing competition 1
-(7, '1-1-1-4', 9, 10, 9, 9, 8, 10, 55, '2025-01-15 10:15:00+00', 'competition', 'eligible'),
-(7, '1-1-1-5', 10, 9, 9, 10, 9, 9, 56, '2025-01-15 10:30:00+00', 'competition', 'eligible'),
-(7, '1-1-1-6', 9, 9, 10, 8, 10, 9, 55, '2025-01-15 10:45:00+00', 'competition', 'eligible'),
+(7, '1-1-1-4', 9, 10, 9, 9, 8, 10, 55, 'competition', 'eligible', '2025-01-15 10:15:00+00', '2025-01-15 10:15:00+00'),
+(7, '1-1-1-5', 10, 9, 9, 10, 9, 9, 56, 'competition', 'eligible', '2025-01-15 10:30:00+00', '2025-01-15 10:30:00+00'),
+(7, '1-1-1-6', 9, 9, 10, 8, 10, 9, 55, 'competition', 'eligible', '2025-01-15 10:45:00+00', '2025-01-15 10:45:00+00'),
 -- Archer 8 continuing competition 1
-(8, '1-1-1-4', 10, 10, 9, 10, 9, 10, 58, '2025-01-15 10:15:00+00', 'competition', 'eligible'),
-(8, '1-1-1-5', 9, 10, 10, 10, 9, 9, 57, '2025-01-15 10:30:00+00', 'competition', 'eligible'),
-(8, '1-1-1-6', 10, 9, 10, 9, 10, 10, 58, '2025-01-15 10:45:00+00', 'competition', 'eligible'),
+(8, '1-1-1-4', 10, 10, 9, 10, 9, 10, 58, 'competition', 'eligible', '2025-01-15 10:15:00+00', '2025-01-15 10:15:00+00'),
+(8, '1-1-1-5', 9, 10, 10, 10, 9, 9, 57, 'competition', 'eligible', '2025-01-15 10:30:00+00', '2025-01-15 10:30:00+00'),
+(8, '1-1-1-6', 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2025-01-15 10:45:00+00', '2025-01-15 10:45:00+00'),
 -- Archer 12 continuing competition 2
-(12, '2-4-4-4', 9, 10, 9, 9, 10, 9, 56, '2025-02-20 11:30:00+00', 'competition', 'eligible'),
-(12, '2-4-4-5', 10, 9, 10, 9, 9, 10, 57, '2025-02-20 12:00:00+00', 'competition', 'eligible'),
+(12, '2-4-4-4', 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2025-02-20 11:30:00+00', '2025-02-20 11:30:00+00'),
+(12, '2-4-4-5', 10, 9, 10, 9, 9, 10, 57, 'competition', 'eligible', '2025-02-20 12:00:00+00', '2025-02-20 12:00:00+00'),
 -- Archer 13 continuing competition 2
-(13, '2-4-4-4', 10, 10, 10, 9, 10, 10, 59, '2025-02-20 11:30:00+00', 'competition', 'eligible'),
-(13, '2-4-4-5', 10, 10, 10, 10, 9, 10, 59, '2025-02-20 12:00:00+00', 'competition', 'eligible'),
+(13, '2-4-4-4', 10, 10, 10, 9, 10, 10, 59, 'competition', 'eligible', '2025-02-20 11:30:00+00', '2025-02-20 11:30:00+00'),
+(13, '2-4-4-5', 10, 10, 10, 10, 9, 10, 59, 'competition', 'eligible', '2025-02-20 12:00:00+00', '2025-02-20 12:00:00+00'),
 -- Archer 14 continuing competition 3
-(14, '3-1-1-3', 10, 9, 10, 9, 10, 10, 58, '2025-03-10 10:30:00+00', 'competition', 'eligible'),
-(14, '3-1-1-4', 9, 10, 9, 10, 9, 9, 56, '2025-03-10 11:00:00+00', 'competition', 'eligible'),
+(14, '3-1-1-3', 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2025-03-10 10:30:00+00', '2025-03-10 10:30:00+00'),
+(14, '3-1-1-4', 9, 10, 9, 10, 9, 9, 56, 'competition', 'eligible', '2025-03-10 11:00:00+00', '2025-03-10 11:00:00+00'),
 -- Additional archers in competition 4
-(7, '4-1-1-1', 9, 9, 10, 8, 9, 9, 54, '2025-04-05 09:30:00+00', 'competition', 'eligible'),
-(7, '4-1-1-2', 10, 9, 9, 9, 8, 10, 55, '2025-04-05 09:45:00+00', 'competition', 'eligible'),
-(8, '4-1-1-1', 10, 10, 9, 10, 9, 9, 57, '2025-04-05 09:30:00+00', 'competition', 'eligible'),
-(8, '4-1-1-2', 9, 10, 10, 9, 10, 10, 58, '2025-04-05 09:45:00+00', 'competition', 'eligible');
+(7, '4-1-1-1', 9, 9, 10, 8, 9, 9, 54, 'competition', 'eligible', '2025-04-05 09:30:00+00', '2025-04-05 09:30:00+00'),
+(7, '4-1-1-2', 10, 9, 9, 9, 8, 10, 55, 'competition', 'eligible', '2025-04-05 09:45:00+00', '2025-04-05 09:45:00+00'),
+(8, '4-1-1-1', 10, 10, 9, 10, 9, 9, 57, 'competition', 'eligible', '2025-04-05 09:30:00+00', '2025-04-05 09:30:00+00'),
+(8, '4-1-1-2', 9, 10, 10, 9, 10, 10, 58, 'competition', 'eligible', '2025-04-05 09:45:00+00', '2025-04-05 09:45:00+00');
 
 -- ============================================
 -- 28. ADDITIONAL TEST SCENARIOS
@@ -450,7 +449,7 @@ VALUES
 (17, 1, NULL, 'intermediate (>= 2 year of experience )', 'Former active member');
 
 -- Add pending competition requests for testing approval workflow
-INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, create_at, updated_at)
+INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
 VALUES 
 (11, 'participating', 'enrol', 2, 3, 1, 'I would like to participate in the Sydney Local Cup', 'pending', '', 6, '2025-03-01 10:00:00+00', '2025-03-01 10:00:00+00'),
 (13, 'participating', 'enrol', 1, 4, 1, 'Application for National Qualifier', 'in progress', 'Under review, will update soon', 4, '2025-03-20 14:00:00+00', '2025-03-22 09:00:00+00'),
@@ -458,11 +457,11 @@ VALUES
 (5, 'recording', 'enrol', 1, 4, NULL, 'Application to record National Qualifier', 'pending', '', 4, '2025-03-20 14:00:00+00', '2025-03-20 14:00:00+00');
 
 -- Add more club enrollment forms with different statuses
-INSERT INTO club_enrollment_form (form_id, sender_id, sender_word, status, club_id, club_creator_word, create_at, updated_at)
+INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)
 VALUES 
-(4, 13, 'Moving to Sydney area, would love to join!', 'in progress', 1, 'We are reviewing your application', '2025-02-15 09:00:00+00', '2025-02-16 14:00:00+00'),
-(5, 16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2024-10-01 10:00:00+00', '2024-10-05 15:00:00+00'),
-(6, 11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2025-01-20 11:00:00+00', '2025-01-22 16:00:00+00');
+(13, 'Moving to Sydney area, would love to join!', 'in progress', 1, 'We are reviewing your application', '2025-02-15 09:00:00+00', '2025-02-16 14:00:00+00'),
+(16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2024-10-01 10:00:00+00', '2024-10-05 15:00:00+00'),
+(11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2025-01-20 11:00:00+00', '2025-01-22 16:00:00+00');
 
 
 

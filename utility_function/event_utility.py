@@ -56,40 +56,7 @@ def get_all_events(event_type="all", date_start=None, date_end=None, category_id
         print(f"Error fetching events: {e}")
         return pd.DataFrame()
 
-def get_event_hierarchy(event_id, event_type):
-    """Get hierarchical data for an event (for icicle chart)"""
-    try:
-        if event_type == "yearly_club_championship":
-            # Get all club competitions for this championship
-            event_contexts = supabase.table("event_context").select("*").eq("yearly_club_championship_id", event_id).execute()
-        else:
-            # Get event contexts for this club competition
-            event_contexts = supabase.table("event_context").select("*").eq("club_competition_id", event_id).execute()
-        
-        if not event_contexts.data:
-            return []
-        
-        hierarchy_data = []
-        for ctx in event_contexts.data:
-            # Get round info
-            round_info = supabase.table("round").select("*").eq("round_id", ctx['round_id']).execute()
-            # Get range info
-            range_info = supabase.table("range").select("*").eq("range_id", ctx['range_id']).execute()
-            
-            hierarchy_data.append({
-                "event_context_id": ctx['event_context_id'],
-                "club_competition_id": ctx['club_competition_id'],
-                "round_id": ctx['round_id'],
-                "range_id": ctx['range_id'],
-                "end_order": ctx['end_order'],
-                "round_name": round_info.data[0]['name'] if round_info.data else f"Round {ctx['round_id']}",
-                "range_distance": range_info.data[0]['distance'] if range_info.data else "Unknown"
-            })
-        
-        return hierarchy_data
-    except Exception as e:
-        print(f"Error fetching event hierarchy: {e}")
-        return []
+
 
 def get_eligible_clubs(eligible_group_id):
     """Get list of eligible clubs for an event"""
@@ -124,7 +91,7 @@ def get_request_forms(status_filter=None, type_filter=None, action_filter=None, 
         
         if user_id and not is_creator:
             # Show only user's own forms
-            query = query.eq("applicant_id", user_id)
+            query = query.eq("sender_id", user_id)
         
         response = query.execute()
         return pd.DataFrame(response.data) if response.data else pd.DataFrame()
@@ -551,44 +518,64 @@ def get_all_eligible_groups():
 
 def get_club_competition_map():
     data = supabase.table("club_competition").select("club_competition_id, name").execute().data
-    return {c["name"]: c["club_competition_id"] for c in data}
+    return {c["name"] : c["club_competition_id"] for c in data}
 def get_yearly_club_championship_map():
     data = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name").execute().data
     return {c["name"]: c["yearly_club_championship_id"] for c in data}
 def get_round_map():
     data = supabase.table("round").select("round_id, name").execute().data
-    return {c["name"]: c["round_id"] for c in data}
+    return {c["name"] : c["round_id"] for c in data}
 
 def get_range_map():
     data = supabase.table("range").select("range_id, distance").execute().data
-    return { c["range_id"] : str(c["distance"]) for c in data}
+    return { c["distance"] : c["range_id"] for c in data}
 
 def get_discipline_map():
     data = supabase.table("discipline").select("discipline_id, name").execute().data
+    return { c["name"] : c["discipline_id"] for c in data}
+
+def get_discipline_id_to_name_map():
+    """Get mapping from discipline_id to discipline name"""
+    data = supabase.table("discipline").select("discipline_id, name").execute().data
     return { c["discipline_id"] : c["name"] for c in data}
+
 def get_equipment_map():
     data = supabase.table("equipment").select("equipment_id, name").execute().data
+    return { c["name"] : c["equipment_id"] for c in data}
+
+def get_equipment_id_to_name_map():
+    """Get mapping from equipment_id to equipment name"""
+    data = supabase.table("equipment").select("equipment_id, name").execute().data
     return { c["equipment_id"] : c["name"] for c in data}
+
 def get_age_division_map():
     # age_division table does not have name, just min_age and max_age, so we need to create a name like "18-25"
     data = supabase.table("age_division").select("age_division_id, min_age, max_age").execute().data
-    return {c["age_division_id"] : f"{c['min_age']}-{c['max_age']}" for c in data}
+    return {f"{c['min_age']}-{c['max_age']}": c["age_division_id"] for c in data}
+
+def get_age_division_id_to_name_map():
+    """Get mapping from age_division_id to age range string"""
+    data = supabase.table("age_division").select("age_division_id, min_age, max_age").execute().data
+    return {c["age_division_id"]: f"{c['min_age']}-{c['max_age']}" for c in data}
 
 def get_category_map():
     #category table does not have name, just discipline_id, age_division_id, equipment_id, so we need to create a name like "Outdoor Target Archery · 18-25 · Longbow"
-    discipline_map = get_discipline_map()
-    age_division_map = get_age_division_map()
-    equipment_map = get_equipment_map()
+    discipline_id_to_name = get_discipline_id_to_name_map()
+    age_division_id_to_name = get_age_division_id_to_name_map()
+    equipment_id_to_name = get_equipment_id_to_name_map()
 
     category_map = {}
     for c in supabase.table("category").select("category_id, discipline_id, age_division_id, equipment_id").execute().data:
-        name = f"{discipline_map.get(c['discipline_id'], 'Unknown Discipline')} · {age_division_map.get(c['age_division_id'], 'Unknown Age Division')} · {equipment_map.get(c['equipment_id'], 'Unknown Equipment')}"
-        category_map[c["category_id"]] = name
+        discipline_name = discipline_id_to_name.get(c['discipline_id'], 'Unknown Discipline')
+        age_division_name = age_division_id_to_name.get(c['age_division_id'], 'Unknown Age Division')
+        equipment_name = equipment_id_to_name.get(c['equipment_id'], 'Unknown Equipment')
+        name = f"{discipline_name} · {age_division_name} · {equipment_name}"
+        category_map[name] = c["category_id"]
     return category_map
 
 def get_club_map():
     data = supabase.table("club").select("club_id, name").execute().data
-    return {c["club_id"]: c["name"] for c in data}
+    return {c["name"]: c["club_id"] for c in data}
 
 def get_list_of_eligible_group_id_from_a_set_of_club_id(club_ids:set) -> list:
     """Given a set of club IDs, find an eligible group id that contain these clubs as subset"""
@@ -628,3 +615,276 @@ def get_list_of_member_club_name_from_eligible_group_of_club_id(eligible_group_o
     except Exception as e:
         print(f"Error fetching member clubs: {e}")
         return []
+
+def get_event_hierarchy_for_icicle(event_type, event_id):
+    """
+    Get hierarchical data for icicle chart visualization
+    Handles two cases:
+    Case 1: Yearly Championship → Club Competition → Round → Range → End
+    Case 2: Club Competition → Round → Range → End
+    
+    Args:
+        event_type: 'yearly_club_championship' or 'club_competition'
+        event_id: the ID of the event
+        
+    Returns: DataFrame with columns: labels, parents, ids, values, level, hover_info
+    """
+    try:
+        hierarchy_rows = []
+        
+        if event_type == 'yearly club championship':
+            # Case 1: Yearly Championship hierarchy
+            # Get championship info
+            championship_response = supabase.table("yearly_club_championship").select("*").eq("yearly_club_championship_id", event_id).execute()
+            if not championship_response.data:
+                return pd.DataFrame()
+            
+            championship = championship_response.data[0]
+            championship_name = championship['name']
+            
+            # Build detailed hover info for championship
+            champ_hover = f"<b>Yearly Club Championship</b><br>"
+            champ_hover += f"ID: {championship.get('yearly_club_championship_id', 'N/A')}<br>"
+            champ_hover += f"Year: {championship.get('year', 'N/A')}<br>"
+            champ_hover += f"Creator ID: {championship.get('creator_id', 'N/A')}<br>"
+            champ_hover += f"Eligible Group ID: {championship.get('eligible_group_of_club_id', 'All Clubs')}<br>"
+            champ_hover += f"Created: {championship.get('created_at', 'N/A')[:10] if championship.get('created_at') else 'N/A'}"
+            
+            # Root: Yearly Championship
+            root_id = f'championship_{event_id}'
+            hierarchy_rows.append({
+                'labels': championship_name,
+                'parents': '',
+                'ids': root_id,
+                'values': 1,
+                'level': 0,
+                'hover_info': champ_hover
+            })
+            
+            # Get all club competitions under this championship
+            event_contexts = supabase.table("event_context").select("*").eq("yearly_club_championship_id", event_id).not_.is_("club_competition_id", "null").execute()
+            
+            if not event_contexts.data:
+                return pd.DataFrame(hierarchy_rows)
+            
+            # Get unique club competition IDs
+            comp_ids = list(set([ec['club_competition_id'] for ec in event_contexts.data if ec.get('club_competition_id')]))
+            
+            # Get competition details
+            competitions = supabase.table("club_competition").select("*").in_("club_competition_id", comp_ids).execute()
+            
+            for competition in competitions.data:
+                comp_id = competition['club_competition_id']
+                comp_name = competition['name']
+                comp_node_id = f'competition_{comp_id}'
+                
+                # Build detailed hover info for competition
+                comp_hover = f"<b>Club Competition</b><br>"
+                comp_hover += f"ID: {comp_id}<br>"
+                comp_hover += f"Address: {competition.get('address', 'N/A')}<br>"
+                comp_hover += f"Start Date: {competition.get('date_start', 'N/A')}<br>"
+                comp_hover += f"End Date: {competition.get('date_end', 'N/A')}<br>"
+                comp_hover += f"Creator ID: {competition.get('creator_id', 'N/A')}<br>"
+                comp_hover += f"Eligible Group ID: {competition.get('eligible_group_of_club_id', 'All Clubs')}"
+                
+                hierarchy_rows.append({
+                    'labels': comp_name,
+                    'parents': root_id,
+                    'ids': comp_node_id,
+                    'values': 1,
+                    'level': 1,
+                    'hover_info': comp_hover
+                })
+                
+                # Get rounds for this competition
+                comp_contexts = [ec for ec in event_contexts.data if ec.get('club_competition_id') == comp_id]
+                round_ids = list(set([ec['round_id'] for ec in comp_contexts if ec.get('round_id')]))
+                
+                if round_ids:
+                    rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id)").in_("round_id", round_ids).execute()
+                    
+                    for round_data in rounds.data:
+                        round_id = round_data['round_id']
+                        round_name = round_data['name']
+                        round_node_id = f'round_{comp_id}_{round_id}'
+                        
+                        # Build detailed hover info for round
+                        round_hover = f"<b>Round</b><br>"
+                        round_hover += f"ID: {round_id}<br>"
+                        round_hover += f"Name: {round_name}<br>"
+                        round_hover += f"Category ID: {round_data.get('category_id', 'N/A')}<br>"
+                        if round_data.get('category'):
+                            cat = round_data['category']
+                            round_hover += f"Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
+                            round_hover += f"Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
+                            round_hover += f"Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
+                        round_hover += f"Created: {round_data.get('created_at', 'N/A')[:10] if round_data.get('created_at') else 'N/A'}"
+                        
+                        hierarchy_rows.append({
+                            'labels': round_name,
+                            'parents': comp_node_id,
+                            'ids': round_node_id,
+                            'values': 1,
+                            'level': 2,
+                            'hover_info': round_hover
+                        })
+                        
+                        # Get ranges and ends for this round
+                        _add_ranges_and_ends_for_icicle(hierarchy_rows, comp_contexts, round_id, round_node_id, level_offset=3)
+        
+        else:
+            # Case 2: Club Competition hierarchy (standalone)
+            # Get competition info
+            competition_response = supabase.table("club_competition").select("*").eq("club_competition_id", event_id).execute()
+            if not competition_response.data:
+                return pd.DataFrame()
+            
+            competition = competition_response.data[0]
+            comp_name = competition['name']
+            
+            # Build detailed hover info for competition
+            comp_hover = f"<b>Club Competition</b><br>"
+            comp_hover += f"ID: {event_id}<br>"
+            comp_hover += f"Address: {competition.get('address', 'N/A')}<br>"
+            comp_hover += f"Start Date: {competition.get('date_start', 'N/A')}<br>"
+            comp_hover += f"End Date: {competition.get('date_end', 'N/A')}<br>"
+            comp_hover += f"Creator ID: {competition.get('creator_id', 'N/A')}<br>"
+            comp_hover += f"Eligible Group ID: {competition.get('eligible_group_of_club_id', 'All Clubs')}<br>"
+            comp_hover += f"Created: {competition.get('created_at', 'N/A')[:10] if competition.get('created_at') else 'N/A'}"
+            
+            # Root: Club Competition
+            root_id = f'competition_{event_id}'
+            hierarchy_rows.append({
+                'labels': comp_name,
+                'parents': '',
+                'ids': root_id,
+                'values': 1,
+                'level': 0,
+                'hover_info': comp_hover
+            })
+            
+            # Get all rounds for this competition
+            event_contexts = supabase.table("event_context").select("*").eq("club_competition_id", event_id).execute()
+            
+            if not event_contexts.data:
+                return pd.DataFrame(hierarchy_rows)
+            
+            round_ids = list(set([ec['round_id'] for ec in event_contexts.data if ec.get('round_id')]))
+            
+            if round_ids:
+                rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id)").in_("round_id", round_ids).execute()
+                
+                for round_data in rounds.data:
+                    round_id = round_data['round_id']
+                    round_name = round_data['name']
+                    round_node_id = f'round_{round_id}'
+                    
+                    # Build detailed hover info for round
+                    round_hover = f"<b>Round</b><br>"
+                    round_hover += f"ID: {round_id}<br>"
+                    round_hover += f"Name: {round_name}<br>"
+                    round_hover += f"Category ID: {round_data.get('category_id', 'N/A')}<br>"
+                    if round_data.get('category'):
+                        cat = round_data['category']
+                        round_hover += f"Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
+                        round_hover += f"Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
+                        round_hover += f"Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
+                    round_hover += f"Created: {round_data.get('created_at', 'N/A')[:10] if round_data.get('created_at') else 'N/A'}"
+                    
+                    hierarchy_rows.append({
+                        'labels': round_name,
+                        'parents': root_id,
+                        'ids': round_node_id,
+                        'values': 1,
+                        'level': 1,
+                        'hover_info': round_hover
+                    })
+                    
+                    # Get ranges and ends for this round
+                    _add_ranges_and_ends_for_icicle(hierarchy_rows, event_contexts.data, round_id, round_node_id, level_offset=2)
+        
+        return pd.DataFrame(hierarchy_rows)
+    
+    except Exception as e:
+        print(f"Error getting event hierarchy for icicle: {e}")
+        import traceback
+        traceback.print_exc()
+        return pd.DataFrame()
+
+def _add_ranges_and_ends_for_icicle(hierarchy_rows, event_contexts, round_id, parent_node_id, level_offset):
+    """
+    Helper function to add ranges and ends to the hierarchy for icicle chart
+    
+    Args:
+        hierarchy_rows: list to append hierarchy data to
+        event_contexts: list of event context records
+        round_id: the round ID to get contexts for
+        parent_node_id: the parent node ID (round node)
+        level_offset: the level offset for range nodes
+    """
+    # Get contexts for this specific round
+    round_contexts = [ec for ec in event_contexts if ec.get('round_id') == round_id]
+    
+    # Group by range
+    range_ids = list(set([ec['range_id'] for ec in round_contexts if ec.get('range_id')]))
+    
+    if range_ids:
+        ranges = supabase.table("range").select("*, target_face(*)").in_("range_id", range_ids).execute()
+        
+        for range_data in ranges.data:
+            range_id = range_data['range_id']
+            range_distance = range_data.get('distance', 'N/A')
+            range_unit = range_data.get('unit_of_length', 'm')
+            range_name = f"{range_distance}{range_unit}" if range_distance != 'N/A' else f"Range {range_id}"
+            range_node_id = f'range_{range_id}_{parent_node_id}'
+            
+            # Build detailed hover info for range
+            range_hover = f"<b>Range</b><br>"
+            range_hover += f"ID: {range_id}<br>"
+            range_hover += f"Distance: {range_distance} {range_unit}<br>"
+            range_hover += f"Target Face ID: {range_data.get('target_face_id', 'N/A')}<br>"
+            if range_data.get('target_face'):
+                tf = range_data['target_face']
+                range_hover += f"Target Diameter: {tf.get('diameter', 'N/A')} {tf.get('unit_of_length', 'cm')}<br>"
+            range_hover += f"Created: {range_data.get('created_at', 'N/A')[:10] if range_data.get('created_at') else 'N/A'}"
+            
+            hierarchy_rows.append({
+                'labels': range_name,
+                'parents': parent_node_id,
+                'ids': range_node_id,
+                'values': 1,
+                'level': level_offset,
+                'hover_info': range_hover
+            })
+            
+            # Get ends for this range in this round
+            # Count unique end_order values for this range and round
+            range_round_contexts = [ec for ec in round_contexts if ec.get('range_id') == range_id]
+            
+            if range_round_contexts:
+                # Get unique end orders
+                end_orders = sorted(set([ec.get('end_order') for ec in range_round_contexts if ec.get('end_order')]))
+                
+                # Add each end
+                for end_order in end_orders:
+                    end_id = f'end_{range_id}_{parent_node_id}_{end_order}'
+                    
+                    # Find the event context for this specific end
+                    end_context = next((ec for ec in range_round_contexts if ec.get('end_order') == end_order), None)
+                    
+                    # Build detailed hover info for end
+                    end_hover = f"<b>End</b><br>"
+                    end_hover += f"End Order: {end_order}<br>"
+                    if end_context:
+                        end_hover += f"Event Context ID: {end_context.get('event_context_id', 'N/A')}<br>"
+                        end_hover += f"Round ID: {end_context.get('round_id', 'N/A')}<br>"
+                        end_hover += f"Range ID: {end_context.get('range_id', 'N/A')}"
+                    
+                    hierarchy_rows.append({
+                        'labels': f'End {end_order}',
+                        'parents': range_node_id,
+                        'ids': end_id,
+                        'values': 1,
+                        'level': level_offset + 1,
+                        'hover_info': end_hover
+                    })
