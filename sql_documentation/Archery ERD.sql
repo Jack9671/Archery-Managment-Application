@@ -210,7 +210,6 @@ CREATE TABLE "request_competition_form" (
   "action" action_request_form_enum NOT NULL,
   "yearly_club_championship_id" int,
   "club_competition_id" int,
-  "round_id" int,
   "sender_word" text NOT NULL,
   "status" status_enum NOT NULL,
   "reviewer_word" text NOT NULL,
@@ -487,8 +486,6 @@ COMMENT ON COLUMN "request_competition_form"."yearly_club_championship_id" IS 'n
 
 COMMENT ON COLUMN "request_competition_form"."club_competition_id" IS 'nullable if recorders apply for that whole yearly club championship. Recorder cannot apply for only one club competition that is a part of a yearly club championship';
 
-COMMENT ON COLUMN "request_competition_form"."round_id" IS 'nullable if registering to be a member to record since a recorder is responsible for the whole club competition if the club competition does not belong to a yearly club championship, or responsible to the whole yearly club championship if the recorders apply for a club competition that is a part of a yearly club championship ';
-
 COMMENT ON COLUMN "ai_conversation_history"."conversation_order" IS 'like starting new conversation, conversation number 1, conversation number 2,...';
 
 COMMENT ON COLUMN "ai_conversation_history"."prompt_response_order" IS '1st prompt-message, 2nd prompt-message in a conversation';
@@ -584,8 +581,6 @@ ALTER TABLE "club" ADD CONSTRAINT "each_archer_can_create_more_than_one_club" FO
 ALTER TABLE "request_competition_form" ADD FOREIGN KEY ("sender_id") REFERENCES "account" ("account_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "request_competition_form" ADD FOREIGN KEY ("club_competition_id") REFERENCES "club_competition" ("club_competition_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "request_competition_form" ADD FOREIGN KEY ("round_id") REFERENCES "round" ("round_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "request_competition_form" ADD CONSTRAINT "reviewed_by_the_recorder_who_is_the_creator_of_an_event" FOREIGN KEY ("reviewed_by") REFERENCES "recorder" ("recorder_id") ON DELETE SET NULL ON UPDATE CASCADE;
 

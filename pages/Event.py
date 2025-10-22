@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import plotly.express as px
 from datetime import datetime, date
+import time
 from utility_function.initilize_dbconnection import supabase
 import utility_function.event_utility as event_utility
 
@@ -19,14 +20,15 @@ st.write(f"Welcome, {st.session_state.get('fullname')}!")
 user_role = st.session_state.get('role')
 
 if user_role == 'recorder':
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🏢 Club Groups", "⚙️ Event Management", "📆 Event Timeline"])
-    tab_browse, tab_enroll, tab_review, tab_schedule, tab_club_groups, tab_manage, tab_timeline = tabs
+    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "� My Events", "�🏢 Club Groups", "⚙️ Event Management"])
+    tab_browse, tab_enroll, tab_review, tab_schedule, tab_my_events, tab_club_groups, tab_manage = tabs
 else:
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule", "📆 Event Timeline"])
+    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "� Review Forms", "�📅 Event Schedule", "🎯 My Events"])
     tab_browse = tabs[0]
     tab_enroll = tabs[1]
-    tab_schedule = tabs[2]
-    tab_timeline = tabs[3]
+    tab_review = tabs[2]
+    tab_schedule = tabs[3]
+    tab_my_events = tabs[4]
 
 # Tab 1: Browse Events
 with tab_browse:
@@ -426,7 +428,7 @@ with tab_schedule:
                     gantt_data.append({
                         'Task': row.get('round_name', f"Round {row['round_id']}"),
                         'Start': row['datetime_to_start'],
-                        'Finish': row['expected_datetime_to_end'],
+                        'Finish': row['datetime_to_end'],
                         'Resource': resource_name
                     })
                 
@@ -480,150 +482,361 @@ with tab_schedule:
         else:
             st.error("Please enter a competition ID.")
 
-# Tab 4 (or 7 for recorder): Event Timeline
-with tab_timeline:
-    st.header("📆 Event Timeline")
-    st.write("View history and upcoming events")
+# Tab: My Events (for all users)
+with tab_my_events:
+    st.header("🎯 My Events")
+    st.write("View events you have enrolled in")
     
-    # Section 1: Choose History or Upcoming
-    st.subheader("Section 1: Time Filter")
-    time_filter = st.radio("Select Time Period", ["History", "Upcoming"], horizontal=True)
+    # Section 1: Time Filter
+    st.subheader("⏰ Time Filter")
+    time_filter = st.radio(
+        "Show events:",
+        ["All", "Upcoming", "History"],
+        horizontal=True,
+        help="Filter events by time period"
+    )
     
-    st.divider()
+    # Convert radio selection to filter value
+    filter_value = "all"
+    if time_filter == "Upcoming":
+        filter_value = "upcoming"
+    elif time_filter == "History":
+        filter_value = "history"
+    
+    # Fetch joined events
+    with st.spinner("Loading your events..."):
+        joined_events = event_utility.get_user_joined_events(
+            user_id=st.session_state.user_id,
+            time_filter=filter_value
+        )
     
     # Section 2: Yearly Club Championships
-    st.subheader("Section 2: Yearly Club Championships")
-    
-    with st.spinner("Loading yearly club championships..."):
-        # Get all yearly club championships
-        championships_response = supabase.table("yearly_club_championship").select("*").execute()
-        championships_df = pd.DataFrame(championships_response.data)
-        
-        if not championships_df.empty:
-            current_year = datetime.now().year
-            
-            if time_filter == "History":
-                # Show championships from past years
-                filtered_championships = championships_df[championships_df['year'] < current_year]
-                if not filtered_championships.empty:
-                    st.write(f"**Found {len(filtered_championships)} past championship(s)**")
-                    st.dataframe(filtered_championships.sort_values('year', ascending=False), use_container_width=True)
-                else:
-                    st.info("No past yearly club championships found.")
-            else:  # Upcoming
-                # Show championships from current and future years
-                filtered_championships = championships_df[championships_df['year'] >= current_year]
-                if not filtered_championships.empty:
-                    st.write(f"**Found {len(filtered_championships)} upcoming championship(s)**")
-                    st.dataframe(filtered_championships.sort_values('year', ascending=True), use_container_width=True)
-                else:
-                    st.info("No upcoming yearly club championships found.")
-        else:
-            st.info("No yearly club championships found in the database.")
-    
     st.divider()
+    st.subheader("🏆 Yearly Club Championships")
+    
+    championships_df = joined_events['championships']
+    
+    if not championships_df.empty:
+        st.success(f"You are enrolled in **{len(championships_df)}** yearly club championship(s)")
+        
+        # Display championships with expandable details
+        for idx, row in championships_df.iterrows():
+            with st.expander(f"📅 {row['name']} ({row['year']})", expanded=False):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Championship ID:** {row['yearly_club_championship_id']}")
+                    st.write(f"**Year:** {row['year']}")
+                    st.write(f"**Creator ID:** {row['creator_id']}")
+                
+                with col2:
+                    if row.get('eligible_group_of_club_id'):
+                        st.write(f"**Eligible Group ID:** {row['eligible_group_of_club_id']}")
+                        # Get club names in the group
+                        club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(
+                            row['eligible_group_of_club_id']
+                        )
+                        if club_names:
+                            st.write(f"**Eligible Clubs:** {', '.join(club_names)}")
+                    else:
+                        st.write("**Eligibility:** All clubs")
+                    
+                    st.write(f"**Created:** {row['created_at'][:10]}")
+                
+                # Show competitions under this championship
+                st.write("---")
+                st.write("**Competitions in this Championship:**")
+                
+                # Query competitions linked to this championship
+                event_contexts = supabase.table("event_context")\
+                    .select("club_competition_id")\
+                    .eq("yearly_club_championship_id", row['yearly_club_championship_id'])\
+                    .execute()
+                
+                if event_contexts.data:
+                    comp_ids = list(set([ec['club_competition_id'] for ec in event_contexts.data if ec.get('club_competition_id')]))
+                    
+                    if comp_ids:
+                        comps = supabase.table("club_competition")\
+                            .select("*")\
+                            .in_("club_competition_id", comp_ids)\
+                            .execute()
+                        
+                        if comps.data:
+                            comp_df = pd.DataFrame(comps.data)
+                            st.dataframe(
+                                comp_df[['club_competition_id', 'name', 'address', 'date_start', 'date_end']],
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                        else:
+                            st.info("No competitions found")
+                    else:
+                        st.info("No competitions linked yet")
+                else:
+                    st.info("No competitions linked yet")
+    else:
+        if time_filter == "All":
+            st.info("You haven't enrolled in any yearly club championships yet.")
+        elif time_filter == "Upcoming":
+            st.info("You don't have any upcoming yearly club championships.")
+        else:
+            st.info("You don't have any past yearly club championships.")
     
     # Section 3: Club Competitions
-    st.subheader("Section 3: Club Competitions")
+    st.divider()
+    st.subheader("🎯 Club Competitions")
     
-    with st.spinner("Loading club competitions..."):
-        # Get all club competitions
-        competitions_response = supabase.table("club_competition").select("*").execute()
-        competitions_df = pd.DataFrame(competitions_response.data)
+    competitions_df = joined_events['competitions']
+    
+    if not competitions_df.empty:
+        st.success(f"You are enrolled in **{len(competitions_df)}** club competition(s)")
         
-        if not competitions_df.empty:
-            # Convert date columns to datetime
-            competitions_df['start_date'] = pd.to_datetime(competitions_df['start_date'])
-            competitions_df['end_date'] = pd.to_datetime(competitions_df['end_date'])
+        # Display competitions with expandable details
+        for idx, row in competitions_df.iterrows():
+            # Determine if competition has ended
+            end_date = pd.to_datetime(row['date_end']).date()
+            current_date = datetime.now().date()
+            status_emoji = "✅" if end_date < current_date else "🔵"
+            status_text = "Completed" if end_date < current_date else "Active/Upcoming"
             
-            today = pd.Timestamp(datetime.now().date())
-            
-            if time_filter == "History":
-                # Show competitions where end_date is in the past
-                filtered_competitions = competitions_df[competitions_df['end_date'] < today]
-                if not filtered_competitions.empty:
-                    st.write(f"**Found {len(filtered_competitions)} past competition(s)**")
-                    # Sort by end_date descending (most recent first)
-                    st.dataframe(filtered_competitions.sort_values('end_date', ascending=False), use_container_width=True)
+            with st.expander(f"{status_emoji} {row['name']} - {status_text}", expanded=False):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Competition ID:** {row['club_competition_id']}")
+                    st.write(f"**Address:** {row['address']}")
+                    st.write(f"**Start Date:** {row['date_start']}")
+                    st.write(f"**End Date:** {row['date_end']}")
+                
+                with col2:
+                    st.write(f"**Creator ID:** {row['creator_id']}")
+                    
+                    if row.get('eligible_group_of_club_id'):
+                        st.write(f"**Eligible Group ID:** {row['eligible_group_of_club_id']}")
+                        # Get club names in the group
+                        club_names = event_utility.get_list_of_member_club_name_from_eligible_group_of_club_id(
+                            row['eligible_group_of_club_id']
+                        )
+                        if club_names:
+                            st.write(f"**Eligible Clubs:** {', '.join(club_names)}")
+                    else:
+                        st.write("**Eligibility:** All clubs")
+                    
+                    st.write(f"**Created:** {row['created_at'][:10]}")
+                
+                # Show round schedule if available
+                st.write("---")
+                st.write("**Round Schedule:**")
+                
+                schedule_df = event_utility.get_round_schedule(row['club_competition_id'])
+                
+                if not schedule_df.empty:
+                    st.dataframe(
+                        schedule_df[['round_name', 'datetime_to_start', 'datetime_to_end']],
+                        use_container_width=True,
+                        hide_index=True
+                    )
                 else:
-                    st.info("No past club competitions found.")
-            else:  # Upcoming
-                # Show competitions where start_date is today or in the future
-                filtered_competitions = competitions_df[competitions_df['start_date'] >= today]
-                if not filtered_competitions.empty:
-                    st.write(f"**Found {len(filtered_competitions)} upcoming competition(s)**")
-                    # Sort by start_date ascending (soonest first)
-                    st.dataframe(filtered_competitions.sort_values('start_date', ascending=True), use_container_width=True)
-                else:
-                    st.info("No upcoming club competitions found.")
+                    st.info("No rounds scheduled yet")
+    else:
+        if time_filter == "All":
+            st.info("You haven't enrolled in any club competitions yet.")
+        elif time_filter == "Upcoming":
+            st.info("You don't have any upcoming club competitions.")
         else:
-            st.info("No club competitions found in the database.")
+            st.info("You don't have any past club competitions.")
+    
+    # Summary statistics
+    st.divider()
+    st.subheader("📊 Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Total Championships", len(championships_df))
+    
+    with col2:
+        st.metric("Total Competitions", len(competitions_df))
+    
+    with col3:
+        total_events = len(championships_df) + len(competitions_df)
+        st.metric("Total Events", total_events)
 
 # Recorder-only tabs
 if user_role == 'recorder':
-    # Tab 4: Review Forms (Recorder only)
+    # Tab 4: Review Forms (All users can view, only creator recorders can edit)
     with tab_review:
         st.header("📋 Review Request Forms")
-        st.write("Review and approve/reject forms for events you created")
+        st.write("View and review enrollment/withdrawal forms")
         
         # Filter options
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            status_filter = st.selectbox("Status", ["all", "pending", "eligible", "ineligible"])
+            status_filter = st.selectbox("Status", ["pending", "in progress", "eligible", "ineligible"])
         
         with col2:
-            type_filter = st.selectbox("Type", ["all", "participating", "recording"])
+            type_filter = st.selectbox("Type", ["participating", "recording"])
         
         with col3:
-            action_filter = st.selectbox("Action", ["all", "enrol", "withdraw"])
+            action_filter = st.selectbox("Action", ["enrol", "withdraw"])
         
-        if st.button("🔍 Load Forms", type="primary"):
-            forms_df = event_utility.get_request_forms(
-                status_filter=status_filter,
-                type_filter=type_filter,
-                action_filter=action_filter,
-                user_id=st.session_state.user_id,
-                is_creator=True
-            )
-            st.session_state.forms_df = forms_df
+        with col4:
+            st.write("")  # Spacer
+            st.write("")  # Spacer
+            apply_filter_btn = st.button("🔍 Apply Filter", type="primary", use_container_width=True)
         
-        # Display and edit forms
-        if 'forms_df' in st.session_state and not st.session_state.forms_df.empty:
-            st.write(f"Found {len(st.session_state.forms_df)} form(s)")
-            
-            edited_df = st.data_editor(
-                st.session_state.forms_df,
-                column_config={
-                    "status": st.column_config.SelectboxColumn(
-                        "Status",
-                        options=["pending", "eligible", "ineligible"],
-                        required=True
-                    )
-                },
-                disabled=["form_id", "sender_id", "type", "action"],
-                use_container_width=True,
-                key="forms_editor"
-            )
-            
-            if st.button("💾 Save Changes", type="primary"):
-                # Compare and update changed rows
-                for idx in range(len(st.session_state.forms_df)):
-                    original_status = st.session_state.forms_df.iloc[idx]['status']
-                    new_status = edited_df.iloc[idx]['status']
-                    
-                    if original_status != new_status:
-                        form_id = edited_df.iloc[idx]['form_id']
-                        success = event_utility.update_form_status(form_id, new_status)
-                        
-                        if success:
-                            st.success(f"Updated form {form_id} to {new_status}")
-                        else:
-                            st.error(f"Failed to update form {form_id}")
+        if apply_filter_btn:
+            with st.spinner("Loading forms..."):
+                # Get filtered forms using supabase query
+                forms_response = supabase.table("request_competition_form")\
+                    .select("*")\
+                    .eq("status", status_filter)\
+                    .eq("type", type_filter)\
+                    .eq("action", action_filter)\
+                    .execute()
                 
-                st.rerun()
-        else:
-            st.info("No forms found with the current filters.")
+                if forms_response.data:
+                    forms_df = pd.DataFrame(forms_response.data)
+                    
+                    # Check if user is a creator for any of these forms
+                    user_id = st.session_state.user_id
+                    is_creator = False
+                    
+                    if user_role == 'recorder':
+                        # Check if this recorder is the creator of any events in the forms
+                        # Get championship IDs and competition IDs from forms
+                        # Convert to int to avoid float issues (pandas converts int to float when NaN present)
+                        championship_ids = [int(x) for x in forms_df[forms_df['yearly_club_championship_id'].notna()]['yearly_club_championship_id'].unique().tolist()]
+                        competition_ids = [int(x) for x in forms_df[forms_df['club_competition_id'].notna()]['club_competition_id'].unique().tolist()]
+                        
+                        # Check if user created any of these events
+                        created_championships = []
+                        created_competitions = []
+                        
+                        if championship_ids:
+                            champ_check = supabase.table("yearly_club_championship")\
+                                .select("yearly_club_championship_id")\
+                                .eq("creator_id", user_id)\
+                                .in_("yearly_club_championship_id", championship_ids)\
+                                .execute()
+                            if champ_check.data:
+                                created_championships = [c['yearly_club_championship_id'] for c in champ_check.data]
+                        
+                        if competition_ids:
+                            comp_check = supabase.table("club_competition")\
+                                .select("club_competition_id")\
+                                .eq("creator_id", user_id)\
+                                .in_("club_competition_id", competition_ids)\
+                                .execute()
+                            if comp_check.data:
+                                created_competitions = [c['club_competition_id'] for c in comp_check.data]
+                        
+                        # Filter forms to only show those where user is the creator
+                        if created_championships or created_competitions:
+                            forms_df = forms_df[
+                                (forms_df['yearly_club_championship_id'].isin(created_championships)) |
+                                (forms_df['club_competition_id'].isin(created_competitions))
+                            ]
+                            is_creator = len(forms_df) > 0
+                    
+                    st.session_state.forms_df = forms_df
+                    st.session_state.is_creator_recorder = is_creator
+                else:
+                    st.session_state.forms_df = pd.DataFrame()
+                    st.session_state.is_creator_recorder = False
+        
+        # Display forms
+        if 'forms_df' in st.session_state and not st.session_state.forms_df.empty:
+            forms_df = st.session_state.forms_df
+            is_creator_recorder = st.session_state.get('is_creator_recorder', False)
+            
+            st.write(f"Found **{len(forms_df)}** form(s)")
+            
+            # Case 1: Archer or non-creator recorder - read-only display
+            if user_role == 'archer' or not is_creator_recorder:
+                st.info("ℹ️ You are not creator, so you can view these forms but cannot edit them.")
+                st.dataframe(forms_df, use_container_width=True, hide_index=True)
+            
+            # Case 2: Creator recorder - editable display (only if not all eligible)
+            else:
+                # Check if all forms are already eligible
+                all_eligible = (forms_df['status'] == 'eligible').all()
+                
+                if all_eligible:
+                    st.info("ℹ️ All forms are already marked as 'eligible'. No further changes allowed.")
+                    st.dataframe(forms_df, use_container_width=True, hide_index=True)
+                else:
+                    st.success("✏️ You are the creator, so you can review and update the status of these forms.")
+                    
+                    # Make eligible rows non-editable by creating disabled list
+                    disabled_columns = ["form_id", "sender_id", "type", "action", "yearly_club_championship_id", 
+                                      "club_competition_id", "round_id", "sender_word", "reviewer_word", 
+                                      "reviewed_by", "created_at", "updated_at"]
+                    
+                    edited_df = st.data_editor(
+                        forms_df,
+                        column_config={
+                            "status": st.column_config.SelectboxColumn(
+                                "Status",
+                                options=["pending", "in progress", "eligible", "ineligible"],
+                                required=True,
+                                help="Note: Forms with 'eligible' status cannot be changed"
+                            )
+                        },
+                        disabled=disabled_columns,
+                        use_container_width=True,
+                        hide_index=True,
+                        key="forms_editor"
+                    )
+                    
+                    st.warning("⚠️ **Note:** Forms already marked as 'eligible' cannot be changed back. Only update forms with other statuses.")
+                    
+                    if st.button("💾 Confirm Changes", type="primary", use_container_width=True):
+                        # Compare and update changed rows
+                        changes_made = False
+                        error_occurred = False
+                        
+                        for idx in range(len(forms_df)):
+                            original_status = forms_df.iloc[idx]['status']
+                            new_status = edited_df.iloc[idx]['status']
+                            
+                            # Only allow changes if original status is NOT 'eligible'
+                            if original_status != new_status:
+                                if original_status == 'eligible':
+                                    st.error(f"❌ Cannot change form {forms_df.iloc[idx]['form_id']} - already marked as 'eligible'")
+                                    error_occurred = True
+                                else:
+                                    form_id = forms_df.iloc[idx]['form_id']
+                                    
+                                    # Update in database
+                                    try:
+                                        update_response = supabase.table("request_competition_form")\
+                                            .update({"status": new_status})\
+                                            .eq("form_id", form_id)\
+                                            .execute()
+                                        
+                                        if update_response.data:
+                                            st.success(f"✅ Updated form {form_id}: {original_status} → {new_status}")
+                                            changes_made = True
+                                        else:
+                                            st.error(f"❌ Failed to update form {form_id}")
+                                            error_occurred = True
+                                    except Exception as e:
+                                        st.error(f"❌ Error updating form {form_id}: {str(e)}")
+                                        error_occurred = True
+                        
+                        if changes_made:
+                            st.success("🎉 All valid changes have been saved!")
+                            if not error_occurred:
+                                st.info("Refreshing forms...")
+                                time.sleep(1)
+                                st.rerun()
+                        elif not error_occurred:
+                            st.info("ℹ️ No changes detected.")
+        elif 'forms_df' in st.session_state:
+            st.info("No forms found matching the selected filters.")
     
     # Tab 5: Club Groups Management (Recorder only)
     with tab_club_groups:
@@ -709,12 +922,7 @@ if user_role == 'recorder':
     
     # Tab 6: Event Management (Recorder only)
     with tab_manage:
-        st.header("⚙️ Event Management")
-        st.write("Create and manage events")
-        
-        management_tab1, management_tab2 = st.tabs(["➕ Create Event", "✏️ Modify Event"])
-        
-        with management_tab1:
+            st.header("⚙️ Event Creation")
             st.subheader("Create New Event")
             st.info("📋 This wizard will guide you through creating a complete event with all its components")
             
@@ -1205,8 +1413,3 @@ if user_role == 'recorder':
                                 st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
                                 st.write("Please try again or contact an administrator.")
         
-        with management_tab2:
-            st.subheader("Modify Existing Event")
-            st.info("⚠️ You can only edit events where the start date has not passed.")
-            st.write("This feature allows you to modify event details, add/remove rounds, ranges, and ends.")
-            st.write("**Coming soon:** Full event modification interface")

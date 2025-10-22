@@ -346,16 +346,16 @@ VALUES
 -- Competition Request Forms
 -- NOTE: All accounts 4-16 now exist in BOTH archer and recorder tables to satisfy dual FK constraints
 
-INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
+INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
 VALUES 
 -- Archers applying to participate
-(7, 'participating', 'enrol', 1, 1, 1, 'I would like to participate in the Olympic Round. I have been training hard.', 'eligible', 'Application approved. Welcome!', 4, '2025-01-01 10:00:00+00', '2025-01-02 14:00:00+00'),
-(8, 'participating', 'enrol', 1, 1, 1, 'Excited to compete! Ready for the challenge.', 'eligible', 'Approved. Good luck!', 4, '2025-01-01 11:00:00+00', '2025-01-02 14:05:00+00'),
-(10, 'participating', 'enrol', 1, 1, 3, 'Applying for compound division.', 'eligible', 'Approved', 4, '2025-01-01 12:00:00+00', '2025-01-02 14:10:00+00'),
-(9, 'participating', 'enrol', NULL, 2, 4, 'First indoor competition, looking forward to it!', 'pending', '', 5, '2025-02-10 09:00:00+00', '2025-02-10 09:00:00+00'),
+(7, 'participating', 'enrol', 1, 1, 'I would like to participate in the Olympic Round. I have been training hard.', 'eligible', 'Application approved. Welcome!', 4, '2025-01-01 10:00:00+00', '2025-01-02 14:00:00+00'),
+(8, 'participating', 'enrol', 1, 1, 'Excited to compete! Ready for the challenge.', 'eligible', 'Approved. Good luck!', 4, '2025-01-01 11:00:00+00', '2025-01-02 14:05:00+00'),
+(10, 'participating', 'enrol', 1, 1, 'Applying for compound division.', 'eligible', 'Approved', 4, '2025-01-01 12:00:00+00', '2025-01-02 14:10:00+00'),
+(9, 'participating', 'enrol', NULL, 2, 'First indoor competition, looking forward to it!', 'pending', '', 5, '2025-02-10 09:00:00+00', '2025-02-10 09:00:00+00'),
 -- Recorders applying to record
-(6, 'recording', 'enrol', NULL, 5, NULL, 'I would like to be the official recorder for this field archery event.', 'eligible', 'Welcome aboard!', 5, '2025-04-01 10:00:00+00', '2025-04-02 15:00:00+00'),
-(4, 'recording', 'enrol', 2, 3, NULL, 'I would like to record for the Sydney Local Cup', 'eligible', 'Approved!', 6, '2025-02-25 10:00:00+00', '2025-02-26 15:00:00+00');
+(6, 'recording', 'enrol', NULL, 5, 'I would like to be the official recorder for this field archery event.', 'eligible', 'Welcome aboard!', 5, '2025-04-01 10:00:00+00', '2025-04-02 15:00:00+00'),
+(4, 'recording', 'enrol', 2, 3, 'I would like to record for the Sydney Local Cup', 'eligible', 'Approved!', 6, '2025-02-25 10:00:00+00', '2025-02-26 15:00:00+00');
 
 -- Club Enrollment Forms
 INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)
@@ -449,12 +449,12 @@ VALUES
 (17, 1, NULL, 'intermediate (>= 2 year of experience )', 'Former active member');
 
 -- Add pending competition requests for testing approval workflow
-INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
+INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
 VALUES 
-(11, 'participating', 'enrol', 2, 3, 1, 'I would like to participate in the Sydney Local Cup', 'pending', '', 6, '2025-03-01 10:00:00+00', '2025-03-01 10:00:00+00'),
-(13, 'participating', 'enrol', 1, 4, 1, 'Application for National Qualifier', 'in progress', 'Under review, will update soon', 4, '2025-03-20 14:00:00+00', '2025-03-22 09:00:00+00'),
-(15, 'participating', 'enrol', NULL, 5, 6, 'Want to try field archery for the first time', 'ineligible', 'Sorry, this competition is for advanced archers only', 6, '2025-04-01 11:00:00+00', '2025-04-03 16:00:00+00'),
-(5, 'recording', 'enrol', 1, 4, NULL, 'Application to record National Qualifier', 'pending', '', 4, '2025-03-20 14:00:00+00', '2025-03-20 14:00:00+00');
+(11, 'participating', 'enrol', 2, 3, 'I would like to participate in the Sydney Local Cup', 'pending', '', 6, '2025-03-01 10:00:00+00', '2025-03-01 10:00:00+00'),
+(13, 'participating', 'enrol', 1, 4, 'Application for National Qualifier', 'in progress', 'Under review, will update soon', 4, '2025-03-20 14:00:00+00', '2025-03-22 09:00:00+00'),
+(15, 'participating', 'enrol', NULL, 5, 'Want to try field archery for the first time', 'ineligible', 'Sorry, this competition is for advanced archers only', 6, '2025-04-01 11:00:00+00', '2025-04-03 16:00:00+00'),
+(5, 'recording', 'enrol', 1, 4, 'Application to record National Qualifier', 'pending', '', 4, '2025-03-20 14:00:00+00', '2025-03-20 14:00:00+00');
 
 -- Add more club enrollment forms with different statuses
 INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)

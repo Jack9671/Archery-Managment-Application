@@ -888,3 +888,86 @@ def _add_ranges_and_ends_for_icicle(hierarchy_rows, event_contexts, round_id, pa
                         'level': level_offset + 1,
                         'hover_info': end_hover
                     })
+
+
+def get_user_joined_events(user_id, time_filter="all"):
+    """Get events that a user has joined (approved enrollment)
+    
+    Args:
+        user_id: The user's account ID
+        time_filter: "all", "history" (past events), or "upcoming" (future events)
+    
+    Returns:
+        dict with 'championships' and 'competitions' DataFrames
+    """
+    try:
+        # Get approved enrollment requests for this user
+        requests_response = supabase.table("request_competition_form")\
+            .select("*, yearly_club_championship_id, club_competition_id")\
+            .eq("sender_id", user_id)\
+            .eq("status", "eligible")\
+            .eq("action", "enrol")\
+            .execute()
+        
+        if not requests_response.data:
+            return {
+                'championships': pd.DataFrame(),
+                'competitions': pd.DataFrame()
+            }
+        
+        requests_df = pd.DataFrame(requests_response.data)
+        
+        # Separate championship and competition requests
+        championship_requests = requests_df[requests_df['yearly_club_championship_id'].notna()]
+        competition_requests = requests_df[requests_df['club_competition_id'].notna()]
+        
+        # Get championship details
+        championships_df = pd.DataFrame()
+        if not championship_requests.empty:
+            championship_ids = championship_requests['yearly_club_championship_id'].unique().tolist()
+            champ_response = supabase.table("yearly_club_championship")\
+                .select("*")\
+                .in_("yearly_club_championship_id", championship_ids)\
+                .execute()
+            
+            if champ_response.data:
+                championships_df = pd.DataFrame(champ_response.data)
+                
+                # Apply time filter based on year
+                current_year = datetime.now().year
+                if time_filter == "history":
+                    championships_df = championships_df[championships_df['year'] < current_year]
+                elif time_filter == "upcoming":
+                    championships_df = championships_df[championships_df['year'] >= current_year]
+        
+        # Get competition details
+        competitions_df = pd.DataFrame()
+        if not competition_requests.empty:
+            competition_ids = competition_requests['club_competition_id'].unique().tolist()
+            comp_response = supabase.table("club_competition")\
+                .select("*")\
+                .in_("club_competition_id", competition_ids)\
+                .execute()
+            
+            if comp_response.data:
+                competitions_df = pd.DataFrame(comp_response.data)
+                
+                # Apply time filter based on end_date
+                current_date = datetime.now().date()
+                if time_filter == "history":
+                    competitions_df = competitions_df[pd.to_datetime(competitions_df['end_date']).dt.date < current_date]
+                elif time_filter == "upcoming":
+                    competitions_df = competitions_df[pd.to_datetime(competitions_df['end_date']).dt.date >= current_date]
+        
+        return {
+            'championships': championships_df,
+            'competitions': competitions_df
+        }
+    
+    except Exception as e:
+        print(f"Error fetching user joined events: {e}")
+        return {
+            'championships': pd.DataFrame(),
+            'competitions': pd.DataFrame()
+        }
+
