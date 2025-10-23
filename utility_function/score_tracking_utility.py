@@ -288,3 +288,70 @@ def get_round_map_of_an_event(event_type: str, event_id: str) -> dict:
     except Exception as e:
         print(f"Error fetching round map of an event: {e}")
         return {}
+
+
+def get_round_map_of_an_event(event_type: str, event_id: str) -> dict:
+    """Get mapping of round names to IDs for a given event (club competition or yearly championship)"""
+    try:
+        if event_type == 'club competition':
+            round_ids = get_all_rounds_in_a_club_competititon(event_id)
+        elif event_type == 'yearly club championship':
+            round_ids = get_all_rounds_in_a_yearly_championship(event_id)
+        else:
+            return {}
+        
+        if not round_ids:
+            return {}
+        
+        response = supabase.table("round").select("round_id, name")\
+            .in_("round_id", round_ids)\
+            .execute()
+        
+        if not response.data:
+            return {}
+        
+        return {row['name']: row['round_id'] for row in response.data}
+    
+    except Exception as e:
+        print(f"Error fetching round map of an event: {e}")
+        return {}
+    
+def get_club_competition_map():
+    data = supabase.table("club_competition").select("club_competition_id, name").execute().data
+    return {c["name"] : c["club_competition_id"] for c in data}
+
+def get_all_participant_id_of_a_club_competition(club_competition_id: str) -> list:
+    """Get all participant IDs of a club competition from event_context and participating tables"""
+    try:
+        # Step 1: Get all event_context_ids for the given club competition
+        response = supabase.table("event_context").select("event_context_id").eq("club_competition_id", club_competition_id).execute()
+        event_context_ids = [record['event_context_id'] for record in response.data] if response.data else []
+        
+        if not event_context_ids:
+            return []
+        
+        # Step 2: Get all participating_ids from participating table using the event_context_ids
+        response = supabase.table("participating").select("participating_id").in_("event_context_id", event_context_ids).execute()
+        participant_ids = list(set([record['participating_id'] for record in response.data])) if response.data else []
+        
+        return participant_ids
+    except Exception as e:
+        st.error(f"Error fetching participant IDs: {str(e)}")
+        return []
+
+def get_participant_map_of_a_club_competition(club_competition_id: str) -> dict:
+    """Get a mapping of participant names to IDs for a given club competition"""
+    try:
+        participant_ids = get_all_participant_id_of_a_club_competition(club_competition_id)
+        
+        if not participant_ids:
+            return {}
+        
+        response = supabase.table("archer").select(
+            "archer_id, account!inner(fullname)"
+        ).in_("archer_id", participant_ids).execute()
+        
+        return {archer['account']['fullname']: archer['archer_id'] for archer in response.data} if response.data else {}
+    except Exception as e:
+        st.error(f"Error fetching participant map: {str(e)}")
+        return {}

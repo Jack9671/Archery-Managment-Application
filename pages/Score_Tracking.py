@@ -154,12 +154,10 @@ elif st.session_state['role'] == 'recorder':
     st.header("Score Tracking for Recorder")
     
     # Get available club competitions, rounds, and archers
-    club_competitions = get_club_competitions()
-    rounds = get_rounds()
-    archers = get_archers()
+    club_competition_map = score_tracking_utility.get_club_competition_map()
     
-    if not club_competitions:
-        st.warning("No competitions available.")
+    if not club_competition_map:
+        st.warning("No competitions available. Please write form to apply to record for competitions.")
         st.stop()
     
     # Input widgets for filtering
@@ -167,30 +165,30 @@ elif st.session_state['role'] == 'recorder':
     with col1:
         selected_competition_name = st.selectbox(
             "Select Club Competition*",
-            [""] + list(club_competitions.keys()),
+            list(club_competition_map.keys()),
             help="Select the competition to view"
         )
     
     with col2:
+        round_map = score_tracking_utility.get_round_map_of_an_event('club competition', club_competition_map[selected_competition_name])
         selected_round_name = st.selectbox(
             "Select Round",
-            ["All Rounds"] + list(rounds.keys()),
-            help="Leave as 'All Rounds' to see all rounds in the competition"
+            list(round_map.keys())
         )
     
     with col3:
+        participant_map = score_tracking_utility.get_participant_map_of_a_club_competition(club_competition_map[selected_competition_name])
         selected_archer_name = st.selectbox(
             "Select Participant",
-            ["All Participants"] + list(archers.keys()),
-            help="Leave as 'All Participants' to see all participants"
+            list(participant_map.keys())
         )
     
     if selected_competition_name:
         # Get IDs from names
-        club_competition_id = club_competitions[selected_competition_name]
-        round_id = rounds[selected_round_name] if selected_round_name != "All Rounds" else None
-        participating_id = archers[selected_archer_name] if selected_archer_name != "All Participants" else None
-        
+        club_competition_id = club_competition_map[selected_competition_name]
+        round_id = round_map[selected_round_name]
+        participating_id = participant_map[selected_archer_name]
+
         # Fetch scores
         scores = get_recorder_scores(club_competition_id, round_id, participating_id)
         
@@ -223,7 +221,7 @@ elif st.session_state['role'] == 'recorder':
             }
             
             # Display editable data editor
-            st.info("ℹ️ As a recorder, you can edit both scores and status fields for all participants.")
+            st.info("ℹ️ As a recorder, you can edit both scores and status fields for participants.")
             
             edited_df = st.data_editor(
                 df,
