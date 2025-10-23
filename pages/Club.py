@@ -47,7 +47,15 @@ with tab1:
                 with col1:
                     # Display club logo
                     if club.get('club_logo_url'):
-                        st.image(club['club_logo_url'], width=150)
+                        try:
+                            st.image(club['club_logo_url'], width=150)
+                        except Exception as e:
+                            st.warning(f"Could not load logo")
+                            # Show default logo
+                            st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png", width=150)
+                    else:
+                        # No logo URL, show default
+                        st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png", width=150)
                 
                 with col2:
                     st.write(f"**Club Name:** {club['name']}")
@@ -69,7 +77,7 @@ with tab1:
                         else:
                             with st.form(f"join_form_{club['club_id']}"):
                                 join_message = st.text_area(
-                                    "Message to Club Creator (Optional)",
+                                    "Message to Club Creator",
                                     placeholder="Tell them why you want to join...",
                                     key=f"msg_{club['club_id']}"
                                 )
@@ -120,10 +128,10 @@ with tab1:
                             try:
                                 file_bytes = club_logo.read()
                                 file_ext = club_logo.name.split(".")[-1]
-                                unique_filename = f"club_{uuid.uuid4()}.{file_ext}"
+                                unique_filename = f"Club_Logo/club_{uuid.uuid4()}.{file_ext}"
                                 
-                                upload_res = supabase.storage.from_("User Avatar").upload(unique_filename, file_bytes)
-                                logo_url = supabase.storage.from_("User Avatar").get_public_url(unique_filename)
+                                upload_res = supabase.storage.from_("User Uploaded").upload(unique_filename, file_bytes)
+                                logo_url = supabase.storage.from_("User Uploaded").get_public_url(unique_filename)
                             except Exception as e:
                                 st.warning(f"Logo upload failed: {str(e)}. Using default logo.")
                         
@@ -156,7 +164,13 @@ if user_role == 'archer':
             
             with col1:
                 if my_club.get('club_logo_url'):
-                    st.image(my_club['club_logo_url'], width=200)
+                    try:
+                        st.image(my_club['club_logo_url'], width=200)
+                    except Exception as e:
+                        st.warning(f"Could not load logo")
+                        st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png", width=200)
+                else:
+                    st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png", width=200)
             
             with col2:
                 st.subheader(my_club['name'])

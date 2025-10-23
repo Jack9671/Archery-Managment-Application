@@ -78,12 +78,13 @@ def get_rounds_by_equipment(equipment_id):
         print(f"Error fetching rounds by equipment: {e}")
         return pd.DataFrame()
 
-def add_equipment(equipment_name, description):
+def add_equipment(equipment_name, description, photo_url=None):
     """Add new equipment (AAF members only)"""
     try:
         response = supabase.table("equipment").insert({
             "name": equipment_name,
-            "description": description
+            "description": description,
+            "photo_url": photo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Equipment_Photo/Default_Equipment_Photo.png"
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:

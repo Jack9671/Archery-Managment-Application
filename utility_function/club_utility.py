@@ -47,7 +47,7 @@ def create_club(creator_id, club_name, club_description, formation_date, club_lo
             "name": club_name,
             "about_club": club_description,
             "formation_date": formation_date,
-            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Avatar/Default_Avatar.jpg"
+            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png"
         }).execute()
         
         if response.data:

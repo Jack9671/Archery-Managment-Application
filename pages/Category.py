@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import uuid
 from utility_function.initilize_dbconnection import supabase
 from utility_function.category_utility import (
     get_all_equipment, get_all_disciplines, get_all_age_divisions,
@@ -41,9 +42,25 @@ with tab_equipment:
         
         for idx, equipment in equipment_df.iterrows():
             with st.expander(f"🎯 {equipment['name']} (ID: {equipment['equipment_id']})"):
-                st.write(f"**Equipment Name:** {equipment['name']}")
-                st.write(f"**Description:**")
-                st.write(equipment.get('description', 'No description available'))
+                col1, col2 = st.columns([1, 3])
+                
+                with col1:
+                    # Display equipment photo
+                    if equipment.get('photo_url'):
+                        try:
+                            st.image(equipment['photo_url'], width=150)
+                        except Exception as e:
+                            st.warning(f"Could not load photo")
+                            # Show default photo
+                            st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Equipment_Photo/Default_Equipment_Photo.png", width=150)
+                    else:
+                        # No photo URL, show default
+                        st.image("https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Equipment_Photo/Default_Equipment_Photo.png", width=150)
+                
+                with col2:
+                    st.write(f"**Equipment Name:** {equipment['name']}")
+                    st.write(f"**Description:**")
+                    st.write(equipment.get('description', 'No description available'))
                 
                 # Show rounds using this equipment
                 st.divider()
@@ -148,26 +165,39 @@ if is_aaf_member:
         ])
         
         if add_option == "Equipment":
-            with st.form("add_equipment_form"):
-                st.subheader("➕ Add New Equipment")
-                
-                equipment_name = st.text_input("Equipment Name*", placeholder="e.g., Compound Bow")
-                equipment_description = st.text_area("Description*", 
-                    value="This is an equipment officially recognized by Australian Archery Federation",
-                    help="Describe the equipment type")
-                
-                submit = st.form_submit_button("Add Equipment", type="primary")
-                
-                if submit:
-                    if not equipment_name or not equipment_description:
-                        st.error("Please fill in all fields!")
+            st.subheader("➕ Add New Equipment")
+            
+            equipment_name = st.text_input("Equipment Name*", placeholder="e.g., Compound Bow")
+            equipment_description = st.text_area("Description*", 
+                value="This is an equipment officially recognized by Australian Archery Federation",
+                help="Describe the equipment type")
+            equipment_photo = st.file_uploader("Equipment Photo (Optional)", type=["png", "jpg", "jpeg"])
+            
+            if st.button("Add Equipment", type="primary", use_container_width=True):
+                if not equipment_name or not equipment_description:
+                    st.error("Please fill in all fields!")
+                else:
+                    # Handle photo upload
+                    photo_url = None
+                    if equipment_photo:
+                        try:
+                            file_bytes = equipment_photo.read()
+                            file_ext = equipment_photo.name.split(".")[-1]
+                            unique_filename = f"Equipment_Photo/equipment_{uuid.uuid4()}.{file_ext}"
+                            
+                            upload_res = supabase.storage.from_("User Uploaded").upload(unique_filename, file_bytes)
+                            photo_url = supabase.storage.from_("User Uploaded").get_public_url(unique_filename)
+                        except Exception as e:
+                            st.warning(f"Photo upload failed: {str(e)}. Using default photo.")
+                    
+                    # Add equipment with photo URL
+                    result = add_equipment(equipment_name, equipment_description, photo_url)
+                    if result:
+                        st.success(f"✅ Equipment added successfully! ID: {result['equipment_id']}")
+                        st.balloons()
+                        st.rerun()
                     else:
-                        result = add_equipment(equipment_name, equipment_description)
-                        if result:
-                            st.success(f"✅ Equipment added successfully! ID: {result['equipment_id']}")
-                            st.balloons()
-                        else:
-                            st.error("Failed to add equipment.")
+                        st.error("Failed to add equipment.")
         
         elif add_option == "Discipline":
             with st.form("add_discipline_form"):

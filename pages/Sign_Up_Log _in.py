@@ -128,13 +128,13 @@ with tab1:
                         # Read file bytes
                         file_bytes = uploaded_file.read()
                         file_ext = uploaded_file.name.split(".")[-1]
-                        unique_filename = f"{uuid.uuid4()}.{file_ext}"
+                        unique_filename = f"Account_Avatar/{uuid.uuid4()}.{file_ext}"
                         
-                        # Upload to Supabase Storage in "User Avatar" bucket
-                        upload_res = supabase.storage.from_("User Avatar").upload(unique_filename, file_bytes)
+                        # Upload to Supabase Storage in "User Uploaded" bucket
+                        upload_res = supabase.storage.from_("User Uploaded").upload(unique_filename, file_bytes)
                         
                         # Get public URL
-                        avatar_url = supabase.storage.from_("User Avatar").get_public_url(unique_filename)
+                        avatar_url = supabase.storage.from_("User Uploaded").get_public_url(unique_filename)
                         
                     except Exception as upload_error:
                         st.warning(f"Profile picture upload failed: {str(upload_error)}. Using default avatar.")
