@@ -739,6 +739,8 @@ if user_role == 'recorder':
             with col4:
                 filter_status = st.selectbox("status", [ "pending", "in progress", "eligible", "ineligible"])
             apply_filter_button = st.button("🔍 Apply Filters", type="primary", use_container_width=True, key="apply_filters_forms")
+            
+            # Store filter parameters in session state when button is clicked
             if apply_filter_button:
                 if option == "yearly club championship":
                     query = supabase.table("request_competition_form").select("*") \
@@ -752,74 +754,107 @@ if user_role == 'recorder':
                     if filter_round_id is not None:
                         query = query.eq("round_id", filter_round_id)
                     response = query.eq("type", filter_type).eq("status", filter_status).execute()
+                
                 forms_data = response.data
-                # check if current user is the creator of the event
+                
+                # Check if current user is the creator of the event
                 if option == "yearly club championship":
-                    #retrieve the creator_id from yearly_club_championship table
                     event_creator = supabase.table("yearly_club_championship").select("creator_id")\
                         .eq("yearly_club_championship_id", filter_event_id).execute().data
-                    if st.session_state.user_id == event_creator[0]['creator_id']:
-                        is_creator = True
-                        #display using st.data_editor and only allow editing of "status" and "reviewer_word" columns
-                    else:
-                        is_creator = False
-                        #display using st.dataframe
+                    is_creator = st.session_state.user_id == event_creator[0]['creator_id'] if event_creator else False
                 else:
-                    #retrieve the creator_id from club_competition table
                     event_creator = supabase.table("club_competition").select("creator_id")\
                         .eq("club_competition_id", filter_event_id).execute().data
-                    if st.session_state.user_id == event_creator[0]['creator_id']:
-                        is_creator = True
-                        #display using st.data_editor and only allow editing of "status" and "reviewer_word" columns
-                    else:
-                        is_creator = False
-                        #display using st.dataframe
+                    is_creator = st.session_state.user_id == event_creator[0]['creator_id'] if event_creator else False
+                
+                # Store in session state
                 if forms_data:
-                    forms_df = pd.DataFrame(forms_data)
-                    if is_creator and filter_status != "eligible":
-                        st.success("You are the creator of this event. You can review and update the forms below.")
-                        edited_df = st.data_editor(
-                            forms_df,
-                            use_container_width=True,
-                            num_rows="dynamic",
-                            disabled= [col for col in forms_df.columns if col not in ["status", "reviewer_word"]],
-                            key="review_forms_editor"
+                    st.session_state['review_forms_data'] = pd.DataFrame(forms_data)
+                    st.session_state['review_forms_is_creator'] = is_creator
+                    st.session_state['review_forms_filter_status'] = filter_status
+                    st.session_state['review_forms_filter_type'] = filter_type
+                else:
+                    st.session_state['review_forms_data'] = pd.DataFrame()
+                    st.session_state['review_forms_is_creator'] = is_creator
+        
+        # Display forms outside the button click handler using session state
+        if 'review_forms_data' in st.session_state and not st.session_state['review_forms_data'].empty:
+            forms_df = st.session_state['review_forms_data']
+            is_creator = st.session_state.get('review_forms_is_creator', False)
+            filter_status = st.session_state.get('review_forms_filter_status', 'pending')
+            filter_type = st.session_state.get('review_forms_filter_type', 'participating')
+            
+            if is_creator and filter_status != "eligible":
+                st.success("You are the creator of this event. You can review and update the forms below.")
+                edited_df = st.data_editor(
+                    forms_df,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    disabled=[col for col in forms_df.columns if col not in ["status", "reviewer_word"]],
+                    column_config={
+                        "status": st.column_config.SelectboxColumn(
+                            "Status",
+                            options=['pending', 'in progress', 'eligible', 'ineligible'],
+                            required=True,
+                            help="Select the status of this request"
                         )
-                        if st.button("💾 Save Changes", type="primary", key="save_form_changes"):
-                            with st.spinner("Saving changes..."):
-                                for _, row in edited_df.iterrows():
-                                    supabase.table("request_competition_form").update({
-                                        "status": row['status'],
-                                        "reviewer_word": row['reviewer_word'],
-                                        "reviewed_by": st.session_state.user_id
-                                    }).eq("request_form_id", row['request_form_id']).execute()
-                                st.success("Changes saved successfully.")
-                            #then add participants to the event for those that have just been marked as eligible
-                            newly_eligible = edited_df[(edited_df['status'] == 'eligible') & (  forms_df['status'] != 'eligible')]
+                    },
+                    key="review_forms_editor"
+                )
+                
+                if st.button("💾 Save Changes", type="primary", key="save_form_changes"):
+                    with st.spinner("Saving changes..."):
+                        # Track newly eligible forms
+                        newly_eligible_rows = []
+                        
+                        for _, row in edited_df.iterrows():
+                            # Update the database
+                            supabase.table("request_competition_form").update({
+                                "status": row['status'],
+                                "reviewer_word": row['reviewer_word'],
+                                "reviewed_by": st.session_state.user_id
+                            }).eq("form_id", row['form_id']).execute()
+                            
+                            # Track if this row was just marked as eligible
+                            original_row = forms_df[forms_df['form_id'] == row['form_id']]
+                            if not original_row.empty and row['status'] == 'eligible' and original_row.iloc[0]['status'] != 'eligible':
+                                newly_eligible_rows.append(row)
+                        
+                        st.success("✅ Changes saved successfully!")
+                        
+                        # Add participants/recorders for newly eligible forms
+                        if newly_eligible_rows:
                             if filter_type == "participating":
-                                for _, row in newly_eligible.iterrows():
-                                    event_utility.add_participant_to_event(
+                                for row in newly_eligible_rows:
+                                    event_utility.add_participant_to_participating_table(
                                         user_id=row['sender_id'],
-                                        yearly_club_championship_id=row['yearly_club_championship_id'],
-                                        club_competition_id=row['club_competition_id'],
+                                        event_type=option, 
+                                        event_id=row['yearly_club_championship_id'] if option == "yearly club championship" else row['club_competition_id'],
                                         round_id=row['round_id']
                                     )
-                                    st.success("Participants added successfully.")
-                            if filter_type == "recording":
-                                for _, row in newly_eligible.iterrows():
-                                    event_utility.add_recorder_to_event(
-                                        user_id=row['sender_id'],
-                                        yearly_club_championship_id=row['yearly_club_championship_id'],
-                                        club_competition_id=row['club_competition_id']
-                                    )
-                                    st.success("Recorders added successfully.")
+                                st.success(f"✅ {len(newly_eligible_rows)} participant(s) added successfully.")
                             
-                    elif is_creator and filter_status == "eligible":
-                        st.info("You are the creator, this event has been marked as eligible. No further edits can be made to the forms.")
-                        st.dataframe(forms_df, use_container_width=True)
-                    else:
-                        st.info("You are not the creator of this event. You can only view the forms below.")
-                        st.dataframe(forms_df, use_container_width=True)
+                            elif filter_type == "recording":
+                                for row in newly_eligible_rows:
+                                    event_utility.add_recorder_to_recording_table(
+                                        user_id=row['sender_id'],
+                                        event_type=option, 
+                                        event_id=row['yearly_club_championship_id'] if option == "yearly club championship" else row['club_competition_id']
+                                    )
+                                st.success(f"✅ {len(newly_eligible_rows)} recorder(s) added successfully.")
+                        
+                        # Clear the session state to force refresh
+                        del st.session_state['review_forms_data']
+                        st.rerun()
+                        
+            elif is_creator and filter_status == "eligible":
+                st.info("These forms have been marked as eligible. No further edits can be made.")
+                st.dataframe(forms_df, use_container_width=True)
+            else:
+                st.info("You are not the creator of this event. You can only view the forms below.")
+                st.dataframe(forms_df, use_container_width=True)
+        elif 'review_forms_data' in st.session_state and st.session_state['review_forms_data'].empty:
+            st.info("No forms found matching the selected filters.")
         
 
     # Tab 5: Club Groups Management (Recorder only)

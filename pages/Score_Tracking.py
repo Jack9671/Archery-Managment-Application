@@ -10,6 +10,7 @@ from utility_function.score_tracking_utility import (
     update_participating_scores,
     format_participating_data_for_display
 )
+import utility_function.score_tracking_utility  as score_tracking_utility
 
 st.set_page_config(page_title="Score Tracking", layout="wide")
 st.title("🎯 Score Tracking")
@@ -30,11 +31,9 @@ if st.session_state['role'] == 'archer':
     st.header("Score Tracking for Archer")
     
     # Get available club competitions and rounds
-    club_competitions = get_club_competitions()
-    rounds = get_rounds()
-    
-    if not club_competitions or not rounds:
-        st.warning("No competitions or rounds available. Please contact the administrator.")
+    club_competition_map = score_tracking_utility.get_club_competition_map_of_an_archer(st.session_state['user_id'])
+    if not club_competition_map:
+        st.warning("No competitions available. Please contact the administrator.")
         st.stop()
     
     # Input widgets for filtering
@@ -42,20 +41,21 @@ if st.session_state['role'] == 'archer':
     with col1:
         selected_competition_name = st.selectbox(
             "Select Club Competition*",
-            [""] + list(club_competitions.keys()),
+            list(club_competition_map.keys()),
             help="Select the competition you are participating in"
         )
-    
+        
     with col2:
+        rounds = score_tracking_utility.get_round_map_of_an_event('club competition', club_competition_map[selected_competition_name])
         selected_round_name = st.selectbox(
             "Select Round*",
-            [""] + list(rounds.keys()),
-            help="Select the round you want to view"
+            list(rounds.keys()),
+            help="Select the round you want"
         )
-    
+
     if selected_competition_name and selected_round_name:
         # Get IDs from names
-        club_competition_id = club_competitions[selected_competition_name]
+        club_competition_id = club_competition_map[selected_competition_name]
         round_id = rounds[selected_round_name]
         participating_id = st.session_state['user_id']
         
@@ -79,7 +79,7 @@ if st.session_state['role'] == 'archer':
                 'Arrow 4': st.column_config.NumberColumn('Arrow 4', min_value=0, max_value=10, step=1),
                 'Arrow 5': st.column_config.NumberColumn('Arrow 5', min_value=0, max_value=10, step=1),
                 'Arrow 6': st.column_config.NumberColumn('Arrow 6', min_value=0, max_value=10, step=1),
-                'Total': st.column_config.NumberColumn('Total', disabled=True),
+                'Total': st.column_config.NumberColumn('Total'),
                 'Status': st.column_config.TextColumn('Status', disabled=True),
                 '_participating_id': None,  # Hide
                 '_event_context_id': None,  # Hide
@@ -94,7 +94,7 @@ if st.session_state['role'] == 'archer':
                 column_config=column_config,
                 hide_index=True,
                 use_container_width=True,
-                disabled=['End Order', 'Total', 'Status', '_participating_id', '_event_context_id', '_type'],
+                disabled=['End Order', 'Status', '_participating_id', '_event_context_id', '_type'],
                 key="archer_score_editor"
             )
             
@@ -159,7 +159,7 @@ elif st.session_state['role'] == 'recorder':
     archers = get_archers()
     
     if not club_competitions:
-        st.warning("No competitions available. Please contact the administrator.")
+        st.warning("No competitions available.")
         st.stop()
     
     # Input widgets for filtering
@@ -173,14 +173,14 @@ elif st.session_state['role'] == 'recorder':
     
     with col2:
         selected_round_name = st.selectbox(
-            "Select Round (Optional)",
+            "Select Round",
             ["All Rounds"] + list(rounds.keys()),
             help="Leave as 'All Rounds' to see all rounds in the competition"
         )
     
     with col3:
         selected_archer_name = st.selectbox(
-            "Select Participant (Optional)",
+            "Select Participant",
             ["All Participants"] + list(archers.keys()),
             help="Leave as 'All Participants' to see all participants"
         )
@@ -212,7 +212,7 @@ elif st.session_state['role'] == 'recorder':
                 'Arrow 4': st.column_config.NumberColumn('Arrow 4', min_value=0, max_value=10, step=1),
                 'Arrow 5': st.column_config.NumberColumn('Arrow 5', min_value=0, max_value=10, step=1),
                 'Arrow 6': st.column_config.NumberColumn('Arrow 6', min_value=0, max_value=10, step=1),
-                'Total': st.column_config.NumberColumn('Total', disabled=True),
+                'Total': st.column_config.NumberColumn('Total'),
                 'Status': st.column_config.SelectboxColumn(
                     'Status',
                     options=['pending', 'in progress', 'eligible', 'ineligible']
@@ -230,7 +230,7 @@ elif st.session_state['role'] == 'recorder':
                 column_config=column_config,
                 hide_index=True,
                 use_container_width=True,
-                disabled=['Archer', 'End Order', 'Total', '_participating_id', '_event_context_id', '_type'],
+                disabled=['Archer', 'End Order', '_participating_id', '_event_context_id', '_type'],
                 key="recorder_score_editor"
             )
             

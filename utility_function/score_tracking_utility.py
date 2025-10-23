@@ -194,3 +194,97 @@ def format_participating_data_for_display(records, include_archer_name=False):
         display_data.append(row)
     
     return pd.DataFrame(display_data)
+
+def get_all_club_competition_ids_of_an_archer(archer_id):
+    """Get all club competition IDs that an archer has participated in from participating table"""
+    #step1: we need to get all event_context_ids from participating table for the archer
+    try:
+        response = supabase.table("participating").select("event_context_id").eq("participating_id", archer_id).execute()
+        event_context_ids = [record['event_context_id'] for record in response.data] if response.data else []
+        
+        if not event_context_ids:
+            return []
+        
+        #step2: we need to get all club_competition_ids from event_context table using the event_context_ids
+        response = supabase.table("event_context").select("club_competition_id").in_("event_context_id", event_context_ids).execute()
+        club_competition_ids = list(set([record['club_competition_id'] for record in response.data])) if response.data else []
+        
+        return club_competition_ids
+    except Exception as e:
+        st.error(f"Error fetching club competition IDs: {str(e)}")
+        return []
+    
+def get_club_competition_map_of_an_archer(archer_id: str) -> dict:
+    """Get a mapping of club competition names to IDs that an archer has participated in"""
+    try:
+        club_competition_ids = get_all_club_competition_ids_of_an_archer(archer_id)
+        
+        if not club_competition_ids:
+            return {}
+        
+        response = supabase.table("club_competition").select("club_competition_id, name").in_("club_competition_id", club_competition_ids).execute()
+        return {comp['name']: comp['club_competition_id'] for comp in response.data} if response.data else {}
+    except Exception as e:
+        st.error(f"Error fetching club competition map: {str(e)}")
+        return {}
+    
+def get_all_rounds_in_a_club_competititon(club_competition_id: str) -> list:
+    """Get all round IDs in a given club competition"""
+    try:
+        response = supabase.table("event_context").select("round_id")\
+            .eq("club_competition_id", club_competition_id)\
+            .execute()
+        
+        if not response.data:
+            return []
+        
+        round_ids = list(set([row['round_id'] for row in response.data if row.get('round_id')]))
+        return round_ids
+    
+    except Exception as e:
+        print(f"Error fetching rounds in club competition: {e}")
+        return []
+
+def get_all_rounds_in_a_yearly_championship(yearly_championship_id: str) -> list:
+    """Get all round IDs in a given yearly club championship"""
+    try:
+        response = supabase.table("event_context").select("round_id")\
+            .eq("yearly_club_championship_id", yearly_championship_id)\
+            .execute()
+        
+        if not response.data:
+            return []
+        
+        round_ids = list(set([row['round_id'] for row in response.data if row.get('round_id')]))
+        #turn to set and make unique, then back to list
+        round_ids = list(set(round_ids))
+        return round_ids
+    except Exception as e:
+        print(f"Error fetching rounds in yearly championship: {e}")
+        return []
+
+def get_round_map_of_an_event(event_type: str, event_id: str) -> dict:
+    """Get mapping of round names to IDs for a given event (club competition or yearly championship)"""
+    try:
+        if event_type == 'club competition':
+            round_ids = get_all_rounds_in_a_club_competititon(event_id)
+        elif event_type == 'yearly club championship':
+            round_ids = get_all_rounds_in_a_yearly_championship(event_id)
+        else:
+            return {}
+        
+        if not round_ids:
+            return {}
+        
+        response = supabase.table("round").select("round_id, name")\
+            .in_("round_id", round_ids)\
+            .execute()
+        
+        if not response.data:
+            return {}
+        
+        return {row['name']: row['round_id'] for row in response.data}
+
+    except Exception as e:
+        print(f"Error fetching round map of an event: {e}")
+        return {}

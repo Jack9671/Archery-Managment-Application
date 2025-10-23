@@ -988,13 +988,17 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
             supabase.table("participating").insert({
                 "participating_id": user_id,
                 "event_context_id": row["event_context_id"],
-                "type": "competition"
+                "type": "competition",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
             }).execute()
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
                 "event_context_id": row["event_context_id"],
-                "type": "practice"
+                "type": "practice",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
             }).execute()
     elif event_type == 'yearly club championship':
         #step 1: get all rows from event_context table where yearly_club_championship_id = event_id and round_id = round_id transform to a dataframe
@@ -1005,16 +1009,20 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
             supabase.table("participating").insert({
                 "participating_id": user_id,
                 "event_context_id": row["event_context_id"],
-                "type": "championship"
+                "type": "championship",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
             }).execute()
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
                 "event_context_id": row["event_context_id"],
-                "type": "practice"
+                "type": "practice",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
             }).execute()
 
-def add_recorder_to_recording(user_id: str, event_type: str, event_id:str) -> None:
+def add_recorder_to_recording_table(user_id: str, event_type: str, event_id:str) -> None:
     if event_type == 'club competition':
         #insert a row into recording table with user_id and club_competition_id = event_id
         supabase.table("recording").insert({
@@ -1031,7 +1039,8 @@ def add_recorder_to_recording(user_id: str, event_type: str, event_id:str) -> No
             supabase.table("recording").insert({
                 "recording_id": user_id,
                 "yearly_club_championship_id": event_id,
-                "club_competition_id": row["club_competition_id"]
+                "club_competition_id": row["club_competition_id"],
+                "created_at": datetime.now().isoformat()
             }).execute()
 
 def get_all_yearly_championship_ids_of_a_recorder(user_id: str) -> list:
