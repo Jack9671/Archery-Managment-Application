@@ -1034,7 +1034,7 @@ def add_recorder_to_recording(user_id: str, event_type: str, event_id:str) -> No
                 "club_competition_id": row["club_competition_id"]
             }).execute()
 
-def get_all_yearly_championship_ids__of_a_recorder(user_id: str) -> list:
+def get_all_yearly_championship_ids_of_a_recorder(user_id: str) -> list:
     '''there are two tables to collect yearly club championship ids of a recorder: yearly_club_championship and recording
     for yearly_club_championship table, we need to get all yearly club championships where creator_id = user_id.
     for recording table, we need to get all yearly club championships where recording_id = user_id.
@@ -1067,8 +1067,8 @@ def get_all_yearly_championship_ids__of_a_recorder(user_id: str) -> list:
     except Exception as e:
         print(f"Error fetching yearly championship IDs for recorder: {e}")
         return []
-    
-def get_all_club_competititon_ids__of_a_recorder(user_id: str) -> list:
+
+def get_all_club_competition_ids_of_a_recorder(user_id: str) -> list:
     '''there are two tables to collect club competition ids of a recorder: club_competition and recording
     for club_competition table, we need to get all club competitions where creator_id = user_id.
     for recording table, we need to get all club competitions where recording_id = user_id.
@@ -1104,7 +1104,7 @@ def get_all_club_competititon_ids__of_a_recorder(user_id: str) -> list:
 
 def get_yearly_club_championship_map_of_a_recorder(user_id: str) -> dict:
     '''Get mapping of yearly club championship names to IDs for a recorder'''
-    championship_ids = get_all_yearly_championship_ids__of_a_recorder(user_id)
+    championship_ids = get_all_yearly_championship_ids_of_a_recorder(user_id)
     if not championship_ids:
         return {}
     response = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name")\
@@ -1115,7 +1115,7 @@ def get_yearly_club_championship_map_of_a_recorder(user_id: str) -> dict:
     return {row['name']: row['yearly_club_championship_id'] for row in response.data}
 def get_club_competition_map_of_a_recorder(user_id: str) -> dict:
     '''Get mapping of club competition names to IDs for a recorder'''
-    competition_ids = get_all_club_competititon_ids__of_a_recorder(user_id)
+    competition_ids = get_all_club_competition_ids_of_a_recorder(user_id)
     if not competition_ids:
         return {}
     response = supabase.table("club_competition").select("club_competition_id, name")\
@@ -1165,9 +1165,9 @@ def get_round_map_of_an_event(event_type: str, event_id: str) -> dict:
     """Get mapping of round names to IDs for a given event (club competition or yearly championship)"""
     try:
         if event_type == 'club competition':
-            round_ids = get_all_round_in_a_club_competititon(event_id)
+            round_ids = get_all_rounds_in_a_club_competititon(event_id)
         elif event_type == 'yearly club championship':
-            round_ids = get_all_round_in_a_yearly_championship(event_id)
+            round_ids = get_all_rounds_in_a_yearly_championship(event_id)
         else:
             return {}
         
@@ -1186,3 +1186,60 @@ def get_round_map_of_an_event(event_type: str, event_id: str) -> dict:
     except Exception as e:
         print(f"Error fetching round map of an event: {e}")
         return {}
+    
+def get_all_club_competition_by_a_yearly_championship(yearly_championship_id: str) -> list:
+    """Get all club competition IDs under a given yearly club championship"""
+    try:
+        response = supabase.table("event_context").select("club_competition_id")\
+            .eq("yearly_club_championship_id", yearly_championship_id)\
+            .execute()
+        
+        if not response.data:
+            return []
+        
+        competition_ids = list(set([row['club_competition_id'] for row in response.data if row.get('club_competition_id')]))
+        return competition_ids
+    
+    except Exception as e:
+        print(f"Error fetching club competitions under yearly championship: {e}")
+        return []
+
+def get_club_competition_map_of_a_yearly_championship(yearly_championship_id: str) -> dict:
+    """Get mapping of club competition names to IDs under a given yearly club championship"""
+    competition_ids = get_all_club_competition_by_a_yearly_championship(yearly_championship_id)
+    if not competition_ids:
+        return {}
+    response = supabase.table("club_competition").select("club_competition_id, name")\
+        .in_("club_competition_id", competition_ids)\
+        .execute()
+
+    if not response.data:
+        return {}
+
+    return {row['name']: row['club_competition_id'] for row in response.data}
+
+def get_all_club_competition_ids_of_no_yearly_club_championship() -> list:
+    '''Get all club competition IDs that where yearly club championship_id is NULL in event_context table'''
+    try:
+        response = supabase.table("event_context").select("club_competition_id")\
+            .is_("yearly_club_championship_id", "null")\
+            .not_.is_("club_competition_id", "null")\
+            .execute()
+        
+        if not response.data:
+            return []
+        
+        competition_ids = list(set([row['club_competition_id'] for row in response.data if row.get('club_competition_id')]))
+        return competition_ids
+    
+    except Exception as e:
+        print(f"Error fetching club competition IDs of no yearly championship: {e}")
+        return []
+def get_club_competition_map_of_no_yearly_club_championship() -> dict:
+    '''Get mapping of club competition names to IDs for competitions not part of any yearly championship'''
+    competition_ids = get_all_club_competition_ids_of_no_yearly_club_championship()
+    if not competition_ids:
+        return {}
+    response = supabase.table("club_competition").select("club_competition_id, name")\
+        .in_("club_competition_id", competition_ids).execute()
+    return {row['name']: row['club_competition_id'] for row in response.data}

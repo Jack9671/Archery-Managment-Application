@@ -321,8 +321,7 @@ with tab_browse:
 # Tab 2: Event Enrollment/Withdraw
 with tab_enroll:
     yearly_club_championship_map = event_utility.get_yearly_club_championship_map()
-    club_competition_map = event_utility.get_club_competition_map()
-    round_map = event_utility.get_round_map()
+
     st.header("Event Enrollment / Withdraw")
     if user_role not in ["archer", "recorder"]:
         st.info("⚠️ Only archers and recorders can submit event enrollment or withdrawal requests.")
@@ -332,26 +331,40 @@ with tab_enroll:
     st.subheader("📝 Submit Request Form") 
     # Move apply_for_option OUTSIDE the form so it can dynamically control form contents
     apply_for_option = st.radio("Apply For", ["yearly club championship", "club competition"], key="apply_for_radio")
-    
-    with st.form("event_request_form"):
+    with st.container(border =True):
         if user_role == 'archer':
             type = "participating"
-            col1, col2 = st.columns(2)
-            with col1:
-                action = st.selectbox("Action*", ["enrol", "withdraw"])
-            with col2:
-                if apply_for_option == "yearly club championship":
-                    yearly_club_championship_name = st.selectbox("yearly club championship*", list(yearly_club_championship_map.keys()))
+
+            action = st.selectbox("Action", ["enrol", "withdraw"])
+            if apply_for_option == "yearly club championship":
+                yearly_club_championship_options = list(yearly_club_championship_map.keys())
+                yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No championships available"])
+                if yearly_club_championship_name and yearly_club_championship_name != "No championships available":
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
-                    round_name = st.selectbox("Round*", event_utility.get_all_rounds_in_a_yearly_championship(yearly_club_championship_id))
-                    round_id = round_map[round_name]
+                    round_map = event_utility.get_round_map_of_an_event('yearly club championship', yearly_club_championship_id)
+                    round_options = list(round_map.keys()) if round_map else ["No rounds available"]
+                    round_name = st.selectbox("Round", round_options)
+                    round_id = round_map.get(round_name) if round_name and round_name != "No rounds available" else None
                 else:
-                    club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
+                    yearly_club_championship_id = None
+                    club_competition_id = None
+                    round_id = None
+            else:
+                club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship()
+                club_competition_options = list(club_competition_map.keys())
+                club_competition_name = st.selectbox("club competition", club_competition_options if club_competition_options else ["No competitions available"])
+                if club_competition_name and club_competition_name != "No competitions available":
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
-                    round_name = st.selectbox("Round*", event_utility.get_all_rounds_in_a_club_competititon(club_competition_id))
-                    round_id = round_map[round_name]
+                    round_map = event_utility.get_round_map_of_an_event('club competition', club_competition_id)
+                    round_options = list(round_map.keys()) if round_map else ["No rounds available"]
+                    round_name = st.selectbox("Round", round_options)
+                    round_id = round_map.get(round_name) if round_name and round_name != "No rounds available" else None
+                else:
+                    club_competition_id = None
+                    yearly_club_championship_id = None
+                    round_id = None
 
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
 
@@ -363,48 +376,65 @@ with tab_enroll:
                 action = st.selectbox("Action*", ["enrol", "withdraw"])
             with col2:
                 if apply_for_option == "yearly club championship":
-                    yearly_club_championship_name = st.selectbox("yearly club championship*", list(yearly_club_championship_map.keys()))
-                    yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
-                    club_competition_id = None
+                    yearly_club_championship_options = list(yearly_club_championship_map.keys())
+                    yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No championships available"])
+                    if yearly_club_championship_name and yearly_club_championship_name != "No championships available":
+                        yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
+                        club_competition_id = None
+                    else:
+                        yearly_club_championship_id = None
+                        club_competition_id = None
                     round_id = None
                 else:
-                    club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
-                    club_competition_id = club_competition_map[club_competition_name]
-                    yearly_club_championship_id = None
+                    club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship()
+                    club_competition_options = list(club_competition_map.keys())
+                    club_competition_name = st.selectbox("club competition*", club_competition_options if club_competition_options else ["No competitions available"])
+                    if club_competition_name and club_competition_name != "No competitions available":
+                        club_competition_id = club_competition_map[club_competition_name]
+                        yearly_club_championship_id = None
+                    else:
+                        club_competition_id = None
+                        yearly_club_championship_id = None
                     round_id = None
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
-        #find creator of the event to set as reviewer by looks at "creator_id" field in yearly_club_championship or club_competition table
-        if apply_for_option == "yearly club championship":
-            event_creator = supabase.table("yearly_club_championship").select("creator_id").eq("yearly_club_championship_id", yearly_club_championship_id).execute().data
-            if event_creator:
-                reviewer_id = event_creator[0]['creator_id']
-            else:
-                reviewer_id = None
-        else:
-            event_creator = supabase.table("club_competition").select("creator_id").eq("club_competition_id", club_competition_id).execute().data
-            if event_creator:
-                reviewer_id = event_creator[0]['creator_id']
-            else:
-                reviewer_id = None
-        submit_button = st.form_submit_button("📤 Submit Request")
+        
+        submit_button = st.button("📤 Submit Request", type="primary", use_container_width=True, key="submit_request_form_btn")
         if submit_button:
             try:
-                response = supabase.table("request_competition_form").insert({
-                    "sender_id": st.session_state.user_id,
-                    "type": type,
-                    "action": action,
-                    "yearly_club_championship_id": yearly_club_championship_id,
-                    "club_competition_id": club_competition_id,
-                    "round_id": round_id,
-                    "sender_word": sender_word,
-                    "status": "pending",
-                    "reviewer_word": "waiting for reviewing",
-                    "reviewed_by": reviewer_id
-                }).execute()
-
+                # Find creator of the event to set as reviewer
+                reviewer_id = None
+                if apply_for_option == "yearly club championship" and yearly_club_championship_id:
+                    event_creator = supabase.table("yearly_club_championship").select("creator_id").eq("yearly_club_championship_id", yearly_club_championship_id).execute().data
+                    if event_creator:
+                        reviewer_id = event_creator[0]['creator_id']
+                elif apply_for_option == "club competition" and club_competition_id:
+                    event_creator = supabase.table("club_competition").select("creator_id").eq("club_competition_id", club_competition_id).execute().data
+                    if event_creator:
+                        reviewer_id = event_creator[0]['creator_id']
+                
+                # Validate that we have required IDs
+                if not yearly_club_championship_id and not club_competition_id:
+                    st.error("Please select a valid event before submitting.")
+                else:
+                    response = supabase.table("request_competition_form").insert({
+                        "sender_id": st.session_state.user_id,
+                        "type": type,
+                        "action": action,
+                        "yearly_club_championship_id": yearly_club_championship_id,
+                        "club_competition_id": club_competition_id,
+                        "round_id": round_id,
+                        "sender_word": sender_word,
+                        "status": "pending",
+                        "reviewer_word": "waiting for reviewing",
+                        "reviewed_by": reviewer_id
+                    }).execute()
+                    
+                    if response.data:
+                        st.success("✅ Request submitted successfully!")
+                        st.rerun()
 
             except Exception as e:
-                print(f"Error submitting form: {e}")
+                st.error(f"Error submitting form: {e}")
     # Tab 2.2: View My Forms
     st.divider()
     st.subheader("📋 My Request Forms")
