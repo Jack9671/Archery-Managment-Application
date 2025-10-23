@@ -344,13 +344,13 @@ with tab_enroll:
                     yearly_club_championship_name = st.selectbox("yearly club championship*", list(yearly_club_championship_map.keys()))
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
-                    round_name = st.selectbox("Round*", event_utility.get_rounds_in_yearly_club_championship(yearly_club_championship_id))
+                    round_name = st.selectbox("Round*", event_utility.get_all_rounds_in_a_yearly_championship(yearly_club_championship_id))
                     round_id = round_map[round_name]
                 else:
                     club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
-                    round_name = st.selectbox("Round*", event_utility.get_rounds_in_club_competition(club_competition_id))
+                    round_name = st.selectbox("Round*", event_utility.get_all_rounds_in_a_club_competititon(club_competition_id))
                     round_id = round_map[round_name]
 
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")

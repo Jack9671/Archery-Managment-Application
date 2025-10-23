@@ -1126,7 +1126,7 @@ def get_club_competition_map_of_a_recorder(user_id: str) -> dict:
     return {row['name']: row['club_competition_id'] for row in response.data}
 
 
-def get_all_round_in_a_club_competititon(club_competition_id: str) -> list:
+def get_all_rounds_in_a_club_competititon(club_competition_id: str) -> list:
     """Get all round IDs in a given club competition"""
     try:
         response = supabase.table("event_context").select("round_id")\
@@ -1143,7 +1143,7 @@ def get_all_round_in_a_club_competititon(club_competition_id: str) -> list:
         print(f"Error fetching rounds in club competition: {e}")
         return []
 
-def get_all_round_in_a_yearly_championship(yearly_championship_id: str) -> list:
+def get_all_rounds_in_a_yearly_championship(yearly_championship_id: str) -> list:
     """Get all round IDs in a given yearly club championship"""
     try:
         response = supabase.table("event_context").select("round_id")\

@@ -1,7 +1,7 @@
 import streamlit as st
 import hashlib
 import uuid
-from datetime import date
+from datetime import date, datetime
 from utility_function.initilize_dbconnection import supabase
 from utility_function.sign_up_log_in_utility import get_countries
 
@@ -148,7 +148,9 @@ with tab1:
                     "date_of_birth": date_of_birth.isoformat(),
                     "sex": sex,
                     "avatar_url": avatar_url,
-                    "role": role
+                    "role": role,
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat()
                 }).execute()
                 
                 if response.data:
