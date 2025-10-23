@@ -704,7 +704,7 @@ with tab_my_events:
 
 # Recorder-only tabs
 if user_role == 'recorder':
-    # Tab 4: Review Forms (All users can view, only creator recorders can edit)
+    # Tab 4: Review Forms (All recorders who are member of an event can view forms for that event, only creator recorders can edit)
     with tab_review:
         st.header("📋 Review Request Forms")
         st.write("View and review enrollment/withdrawal forms, please configure your filters below to find the forms you want to review.")
