@@ -6,3 +6,4 @@ def get_countries()->list:
     for country in pycountry.countries:
         countries.append(country.name)
     return sorted(countries)
+

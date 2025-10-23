@@ -83,11 +83,7 @@ def join_club(archer_id, club_id, sender_word="I would like to join this club.")
         
         return response.data[0] if response.data else None
     except Exception as e:
-        error_msg = str(e)
-        print(f"Error joining club: {error_msg}")
-        # Check for sequence error
-        if "duplicate key value violates unique constraint" in error_msg and "form_id" in error_msg:
-            print("⚠️ Database sequence error: form_id auto-increment is out of sync")
+        print(f"Error joining club: {e}")
         return None
 
 def get_club_members(club_id):

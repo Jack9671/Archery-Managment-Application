@@ -140,7 +140,7 @@ with tab_browse:
     if club_option != "All Clubs" and not list_of_club_name:
         disable_apply = True
     
-    apply_filter_btn = st.button("🔍 Apply Filters", type="primary", use_container_width=True, disabled=disable_apply)
+    apply_filter_btn = st.button("🔍 Apply Filters", type="primary", use_container_width=True, disabled=disable_apply, key="apply_filters_events")
     if apply_filter_btn:
         with st.spinner("Fetching events..."):
             if event_type == "yearly club championship":
@@ -267,7 +267,7 @@ with tab_browse:
         )
         hierarchy_event_id = club_competition_map[event_name]
         
-    visualize_btn = st.button("🎨 Show Hierarchy", type="primary")
+    visualize_btn = st.button("🎨 Show Hierarchy", type="primary", key="visualize_hierarchy")
     
     if visualize_btn:
         with st.spinner("Building hierarchy visualization..."):
@@ -322,6 +322,7 @@ with tab_browse:
 with tab_enroll:
     yearly_club_championship_map = event_utility.get_yearly_club_championship_map()
     club_competition_map = event_utility.get_club_competition_map()
+    round_map = event_utility.get_round_map()
     st.header("Event Enrollment / Withdraw")
     if user_role not in ["archer", "recorder"]:
         st.info("⚠️ Only archers and recorders can submit event enrollment or withdrawal requests.")
@@ -343,10 +344,15 @@ with tab_enroll:
                     yearly_club_championship_name = st.selectbox("yearly club championship*", list(yearly_club_championship_map.keys()))
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
+                    round_name = st.selectbox("Round*", event_utility.get_rounds_in_yearly_club_championship(yearly_club_championship_id))
+                    round_id = round_map[round_name]
                 else:
                     club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
+                    round_name = st.selectbox("Round*", event_utility.get_rounds_in_club_competition(club_competition_id))
+                    round_id = round_map[round_name]
+
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
 
 
@@ -360,10 +366,12 @@ with tab_enroll:
                     yearly_club_championship_name = st.selectbox("yearly club championship*", list(yearly_club_championship_map.keys()))
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
+                    round_id = None
                 else:
                     club_competition_name = st.selectbox("club competition*", list(club_competition_map.keys()))
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
+                    round_id = None
             sender_word = st.text_area("Write something you want to tell to the creator of the event", placeholder="Enter any additional information or message")
         #find creator of the event to set as reviewer by looks at "creator_id" field in yearly_club_championship or club_competition table
         if apply_for_option == "yearly club championship":
@@ -387,6 +395,7 @@ with tab_enroll:
                     "action": action,
                     "yearly_club_championship_id": yearly_club_championship_id,
                     "club_competition_id": club_competition_id,
+                    "round_id": round_id,
                     "sender_word": sender_word,
                     "status": "pending",
                     "reviewer_word": "waiting for reviewing",
@@ -416,7 +425,7 @@ with tab_schedule:
     club_competition_name = st.selectbox("Select club competition", list(club_competition_map.keys()))
     competition_id_input = club_competition_map[club_competition_name]
 
-    if st.button("🔍 View Schedule", type="primary"):
+    if st.button("🔍 View Schedule", type="primary", key="view_schedule_btn"):
         if competition_id_input:
             schedule_df = event_utility.get_round_schedule(competition_id_input)
             
@@ -668,176 +677,121 @@ if user_role == 'recorder':
     # Tab 4: Review Forms (All users can view, only creator recorders can edit)
     with tab_review:
         st.header("📋 Review Request Forms")
-        st.write("View and review enrollment/withdrawal forms")
-        
-        # Filter options
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            status_filter = st.selectbox("Status", ["pending", "in progress", "eligible", "ineligible"])
-        
-        with col2:
-            type_filter = st.selectbox("Type", ["participating", "recording"])
-        
-        with col3:
-            action_filter = st.selectbox("Action", ["enrol", "withdraw"])
-        
-        with col4:
-            st.write("")  # Spacer
-            st.write("")  # Spacer
-            apply_filter_btn = st.button("🔍 Apply Filter", type="primary", use_container_width=True)
-        
-        if apply_filter_btn:
-            with st.spinner("Loading forms..."):
-                # Get filtered forms using supabase query
-                forms_response = supabase.table("request_competition_form")\
-                    .select("*")\
-                    .eq("status", status_filter)\
-                    .eq("type", type_filter)\
-                    .eq("action", action_filter)\
-                    .execute()
-                
-                if forms_response.data:
-                    forms_df = pd.DataFrame(forms_response.data)
-                    
-                    # Check if user is a creator for any of these forms
-                    user_id = st.session_state.user_id
-                    is_creator = False
-                    
-                    if user_role == 'recorder':
-                        # Check if this recorder is the creator of any events in the forms
-                        # Get championship IDs and competition IDs from forms
-                        # Convert to int to avoid float issues (pandas converts int to float when NaN present)
-                        championship_ids = [int(x) for x in forms_df[forms_df['yearly_club_championship_id'].notna()]['yearly_club_championship_id'].unique().tolist()]
-                        competition_ids = [int(x) for x in forms_df[forms_df['club_competition_id'].notna()]['club_competition_id'].unique().tolist()]
-                        
-                        # Check if user created any of these events
-                        created_championships = []
-                        created_competitions = []
-                        
-                        if championship_ids:
-                            champ_check = supabase.table("yearly_club_championship")\
-                                .select("yearly_club_championship_id")\
-                                .eq("creator_id", user_id)\
-                                .in_("yearly_club_championship_id", championship_ids)\
-                                .execute()
-                            if champ_check.data:
-                                created_championships = [c['yearly_club_championship_id'] for c in champ_check.data]
-                        
-                        if competition_ids:
-                            comp_check = supabase.table("club_competition")\
-                                .select("club_competition_id")\
-                                .eq("creator_id", user_id)\
-                                .in_("club_competition_id", competition_ids)\
-                                .execute()
-                            if comp_check.data:
-                                created_competitions = [c['club_competition_id'] for c in comp_check.data]
-                        
-                        # Filter forms to only show those where user is the creator
-                        if created_championships or created_competitions:
-                            forms_df = forms_df[
-                                (forms_df['yearly_club_championship_id'].isin(created_championships)) |
-                                (forms_df['club_competition_id'].isin(created_competitions))
-                            ]
-                            is_creator = len(forms_df) > 0
-                    
-                    st.session_state.forms_df = forms_df
-                    st.session_state.is_creator_recorder = is_creator
+        st.write("View and review enrollment/withdrawal forms, please configure your filters below to find the forms you want to review.")
+        st.info("Options for you to select come from the events you have created or have been applied to record for.")
+        with st.container(border =True):
+            # Filter options
+            #yearly_club_championship or club_competition
+            option = st.radio("View Forms For", ["yearly club championship", "club competition"], horizontal=True)  
+            col1, col2, col3, col4 = st.columns(4)
+            with col1: 
+                if option == "yearly club championship":
+                    yearly_championship_map = event_utility.get_yearly_club_championship_map_of_a_recorder(user_id=st.session_state.user_id)
+                    filter_event_name = st.selectbox("yearly club championship", list(yearly_championship_map.keys()))
+                    filter_event_id = yearly_championship_map[filter_event_name]
                 else:
-                    st.session_state.forms_df = pd.DataFrame()
-                    st.session_state.is_creator_recorder = False
-        
-        # Display forms
-        if 'forms_df' in st.session_state and not st.session_state.forms_df.empty:
-            forms_df = st.session_state.forms_df
-            is_creator_recorder = st.session_state.get('is_creator_recorder', False)
-            
-            st.write(f"Found **{len(forms_df)}** form(s)")
-            
-            # Case 1: Archer or non-creator recorder - read-only display
-            if user_role == 'archer' or not is_creator_recorder:
-                st.info("ℹ️ You are not creator, so you can view these forms but cannot edit them.")
-                st.dataframe(forms_df, use_container_width=True, hide_index=True)
-            
-            # Case 2: Creator recorder - editable display (only if not all eligible)
-            else:
-                # Check if all forms are already eligible
-                all_eligible = (forms_df['status'] == 'eligible').all()
-                
-                if all_eligible:
-                    st.info("ℹ️ All forms are already marked as 'eligible'. No further changes allowed.")
-                    st.dataframe(forms_df, use_container_width=True, hide_index=True)
+                    club_competition_map = event_utility.get_club_competition_map_of_a_recorder(user_id=st.session_state.user_id)
+                    filter_event_name = st.selectbox("club competition", list(club_competition_map.keys()))
+                    filter_event_id = club_competition_map[filter_event_name]
+            with col2:
+                filter_type = st.selectbox("type", [ "participating", "recording"])
+                round_map = event_utility.get_round_map_of_an_event(event_type=option, event_id=filter_event_id)
+                    
+            with col3:
+                if filter_type == "recording":
+                    filter_round_id = None
+                elif filter_type == "participating":
+                    filter_round_name = st.selectbox("round", ["All"] + list(round_map.keys()))  
+                    if filter_round_name == "All":
+                        filter_round_id = None
+                    else:
+                        filter_round_id = round_map[filter_round_name]
+            with col4:
+                filter_status = st.selectbox("status", [ "pending", "in progress", "eligible", "ineligible"])
+            apply_filter_button = st.button("🔍 Apply Filters", type="primary", use_container_width=True, key="apply_filters_forms")
+            if apply_filter_button:
+                if option == "yearly club championship":
+                    query = supabase.table("request_competition_form").select("*") \
+                        .eq("yearly_club_championship_id", filter_event_id)
+                    if filter_round_id is not None:
+                        query = query.eq("round_id", filter_round_id)
+                    response = query.eq("type", filter_type).eq("status", filter_status).execute()
                 else:
-                    st.success("✏️ You are the creator, so you can review and update the status of these forms.")
-                    
-                    # Make eligible rows non-editable by creating disabled list
-                    disabled_columns = ["form_id", "sender_id", "type", "action", "yearly_club_championship_id", 
-                                      "club_competition_id", "round_id", "sender_word", "reviewer_word", 
-                                      "reviewed_by", "created_at", "updated_at"]
-                    
-                    edited_df = st.data_editor(
-                        forms_df,
-                        column_config={
-                            "status": st.column_config.SelectboxColumn(
-                                "Status",
-                                options=["pending", "in progress", "eligible", "ineligible"],
-                                required=True,
-                                help="Note: Forms with 'eligible' status cannot be changed"
-                            )
-                        },
-                        disabled=disabled_columns,
-                        use_container_width=True,
-                        hide_index=True,
-                        key="forms_editor"
-                    )
-                    
-                    st.warning("⚠️ **Note:** Forms already marked as 'eligible' cannot be changed back. Only update forms with other statuses.")
-                    
-                    if st.button("💾 Confirm Changes", type="primary", use_container_width=True):
-                        # Compare and update changed rows
-                        changes_made = False
-                        error_occurred = False
-                        
-                        for idx in range(len(forms_df)):
-                            original_status = forms_df.iloc[idx]['status']
-                            new_status = edited_df.iloc[idx]['status']
+                    query = supabase.table("request_competition_form").select("*") \
+                        .eq("club_competition_id", filter_event_id)
+                    if filter_round_id is not None:
+                        query = query.eq("round_id", filter_round_id)
+                    response = query.eq("type", filter_type).eq("status", filter_status).execute()
+                forms_data = response.data
+                # check if current user is the creator of the event
+                if option == "yearly club championship":
+                    #retrieve the creator_id from yearly_club_championship table
+                    event_creator = supabase.table("yearly_club_championship").select("creator_id")\
+                        .eq("yearly_club_championship_id", filter_event_id).execute().data
+                    if st.session_state.user_id == event_creator[0]['creator_id']:
+                        is_creator = True
+                        #display using st.data_editor and only allow editing of "status" and "reviewer_word" columns
+                    else:
+                        is_creator = False
+                        #display using st.dataframe
+                else:
+                    #retrieve the creator_id from club_competition table
+                    event_creator = supabase.table("club_competition").select("creator_id")\
+                        .eq("club_competition_id", filter_event_id).execute().data
+                    if st.session_state.user_id == event_creator[0]['creator_id']:
+                        is_creator = True
+                        #display using st.data_editor and only allow editing of "status" and "reviewer_word" columns
+                    else:
+                        is_creator = False
+                        #display using st.dataframe
+                if forms_data:
+                    forms_df = pd.DataFrame(forms_data)
+                    if is_creator and filter_status != "eligible":
+                        st.success("You are the creator of this event. You can review and update the forms below.")
+                        edited_df = st.data_editor(
+                            forms_df,
+                            use_container_width=True,
+                            num_rows="dynamic",
+                            disabled= [col for col in forms_df.columns if col not in ["status", "reviewer_word"]],
+                            key="review_forms_editor"
+                        )
+                        if st.button("💾 Save Changes", type="primary", key="save_form_changes"):
+                            with st.spinner("Saving changes..."):
+                                for _, row in edited_df.iterrows():
+                                    supabase.table("request_competition_form").update({
+                                        "status": row['status'],
+                                        "reviewer_word": row['reviewer_word'],
+                                        "reviewed_by": st.session_state.user_id
+                                    }).eq("request_form_id", row['request_form_id']).execute()
+                                st.success("Changes saved successfully.")
+                            #then add participants to the event for those that have just been marked as eligible
+                            newly_eligible = edited_df[(edited_df['status'] == 'eligible') & (  forms_df['status'] != 'eligible')]
+                            if filter_type == "participating":
+                                for _, row in newly_eligible.iterrows():
+                                    event_utility.add_participant_to_event(
+                                        user_id=row['sender_id'],
+                                        yearly_club_championship_id=row['yearly_club_championship_id'],
+                                        club_competition_id=row['club_competition_id'],
+                                        round_id=row['round_id']
+                                    )
+                                    st.success("Participants added successfully.")
+                            if filter_type == "recording":
+                                for _, row in newly_eligible.iterrows():
+                                    event_utility.add_recorder_to_event(
+                                        user_id=row['sender_id'],
+                                        yearly_club_championship_id=row['yearly_club_championship_id'],
+                                        club_competition_id=row['club_competition_id']
+                                    )
+                                    st.success("Recorders added successfully.")
                             
-                            # Only allow changes if original status is NOT 'eligible'
-                            if original_status != new_status:
-                                if original_status == 'eligible':
-                                    st.error(f"❌ Cannot change form {forms_df.iloc[idx]['form_id']} - already marked as 'eligible'")
-                                    error_occurred = True
-                                else:
-                                    form_id = forms_df.iloc[idx]['form_id']
-                                    
-                                    # Update in database
-                                    try:
-                                        update_response = supabase.table("request_competition_form")\
-                                            .update({"status": new_status})\
-                                            .eq("form_id", form_id)\
-                                            .execute()
-                                        
-                                        if update_response.data:
-                                            st.success(f"✅ Updated form {form_id}: {original_status} → {new_status}")
-                                            changes_made = True
-                                        else:
-                                            st.error(f"❌ Failed to update form {form_id}")
-                                            error_occurred = True
-                                    except Exception as e:
-                                        st.error(f"❌ Error updating form {form_id}: {str(e)}")
-                                        error_occurred = True
-                        
-                        if changes_made:
-                            st.success("🎉 All valid changes have been saved!")
-                            if not error_occurred:
-                                st.info("Refreshing forms...")
-                                time.sleep(1)
-                                st.rerun()
-                        elif not error_occurred:
-                            st.info("ℹ️ No changes detected.")
-        elif 'forms_df' in st.session_state:
-            st.info("No forms found matching the selected filters.")
-    
+                    elif is_creator and filter_status == "eligible":
+                        st.info("You are the creator, this event has been marked as eligible. No further edits can be made to the forms.")
+                        st.dataframe(forms_df, use_container_width=True)
+                    else:
+                        st.info("You are not the creator of this event. You can only view the forms below.")
+                        st.dataframe(forms_df, use_container_width=True)
+        
+
     # Tab 5: Club Groups Management (Recorder only)
     with tab_club_groups:
         st.header("🏢 Eligible Club Groups Management")
@@ -873,7 +827,7 @@ if user_role == 'recorder':
                         for club_name in selected_clubs:
                             st.write(f"- {club_name}")
                     
-                    if st.button("✅ Create Eligible Group", type="primary", use_container_width=True):
+                    if st.button("✅ Create Eligible Group", type="primary", use_container_width=True, key="create_eligible_group"):
                         with st.spinner("Creating eligible club group..."):
                             # Get club IDs from selected names
                             selected_club_ids = [club_options[club_name] for club_name in selected_clubs]
@@ -895,7 +849,7 @@ if user_role == 'recorder':
         with club_groups_tab2:
             st.subheader("Existing Eligible Club Groups")
             
-            if st.button("🔄 Refresh Groups", type="secondary"):
+            if st.button("🔄 Refresh Groups", type="secondary", key="refresh_groups"):
                 st.rerun()
             
             # Get all eligible groups
@@ -924,7 +878,7 @@ if user_role == 'recorder':
     with tab_manage:
             st.header("⚙️ Event Creation")
             st.subheader("Create New Event")
-            st.info("📋 This wizard will guide you through creating a complete event with all its components")
+            st.info("📋 Follow the steps below to create a new event:")
             
             # Initialize event builder state
             if 'event_builder_step' not in st.session_state:
@@ -947,7 +901,7 @@ if user_role == 'recorder':
                 
                 col1, col2 = st.columns([1, 1])
                 with col2:
-                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                    if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step1"):
                         st.session_state.event_builder_data['event_type'] = event_type
                         st.session_state.event_builder_step = 2
                         st.rerun()
@@ -1004,11 +958,11 @@ if user_role == 'recorder':
                     
                     col1, col2 = st.columns([1, 1])
                     with col1:
-                        if st.button("⬅️ Back"):
+                        if st.button("⬅️ Back", key="back_step2_championship"):
                             st.session_state.event_builder_step = 1
                             st.rerun()
                     with col2:
-                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                        if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step2_championship"):
                             if not championship_name:
                                 st.error("Championship name is required!")
                             else:
@@ -1074,11 +1028,11 @@ if user_role == 'recorder':
                     
                     col1, col2 = st.columns([1, 1])
                     with col1:
-                        if st.button("⬅️ Back"):
+                        if st.button("⬅️ Back", key="back_step2_competition"):
                             st.session_state.event_builder_step = 1
                             st.rerun()
                     with col2:
-                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                        if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step2_competition"):
                             if not competition_name or not address:
                                 st.error("Competition name and address are required!")
                             elif date_end < date_start:
@@ -1126,7 +1080,7 @@ if user_role == 'recorder':
                         with col2:
                             comp_end = st.date_input("End Date*", value=date.today(), key="new_comp_end")
                         
-                        if st.button("➕ Add Competition"):
+                        if st.button("➕ Add Competition", key="add_competition"):
                             if comp_name and comp_address:
                                 st.session_state.event_builder_data['competitions'].append({
                                     'name': comp_name,
@@ -1141,11 +1095,11 @@ if user_role == 'recorder':
                     
                     col1, col2 = st.columns([1, 1])
                     with col1:
-                        if st.button("⬅️ Back"):
+                        if st.button("⬅️ Back", key="back_step3_championship"):
                             st.session_state.event_builder_step = 2
                             st.rerun()
                     with col2:
-                        if st.button("Next ➡️", type="primary", use_container_width=True):
+                        if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step3_championship"):
                             if not st.session_state.event_builder_data['competitions']:
                                 st.error("Please add at least one competition!")
                             else:
@@ -1186,7 +1140,7 @@ if user_role == 'recorder':
                     round_options = {f"{r['name']}": r['round_id'] for r in rounds_response.data}
                     selected_round = st.selectbox("Select Round to Add", [""] + list(round_options.keys()))
                     
-                    if st.button("➕ Add Round") and selected_round:
+                    if st.button("➕ Add Round", key="add_round") and selected_round:
                         round_id = round_options[selected_round]
                         if round_id not in st.session_state.event_builder_data['rounds']:
                             st.session_state.event_builder_data['rounds'].append(round_id)
@@ -1197,11 +1151,11 @@ if user_role == 'recorder':
                 
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("⬅️ Back"):
+                    if st.button("⬅️ Back", key="back_step4"):
                         st.session_state.event_builder_step = 3 if st.session_state.event_builder_data.get('event_type') == "Yearly Club Championship" else 2
                         st.rerun()
                 with col2:
-                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                    if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step4"):
                         if not st.session_state.event_builder_data['rounds']:
                             st.error("Please add at least one round!")
                         else:
@@ -1263,11 +1217,11 @@ if user_role == 'recorder':
                 
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("⬅️ Back"):
+                    if st.button("⬅️ Back", key="back_step5"):
                         st.session_state.event_builder_step = 4
                         st.rerun()
                 with col2:
-                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                    if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step5"):
                         # Validate all rounds have schedules
                         all_scheduled = all(round_id in st.session_state.event_builder_data['round_schedules'] 
                                           for round_id in st.session_state.event_builder_data['rounds'])
@@ -1335,11 +1289,11 @@ if user_role == 'recorder':
                 
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("⬅️ Back"):
+                    if st.button("⬅️ Back", key="back_step6"):
                         st.session_state.event_builder_step = 5
                         st.rerun()
                 with col2:
-                    if st.button("Next ➡️", type="primary", use_container_width=True):
+                    if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step6"):
                         # Validate all rounds have ranges configured
                         all_configured = all(st.session_state.event_builder_data['ranges_config'].get(r_id, []) 
                                            for r_id in st.session_state.event_builder_data['rounds'])
@@ -1372,16 +1326,16 @@ if user_role == 'recorder':
                 
                 col1, col2, col3 = st.columns([1, 1, 1])
                 with col1:
-                    if st.button("⬅️ Back"):
+                    if st.button("⬅️ Back", key="back_step7"):
                         st.session_state.event_builder_step = 6
                         st.rerun()
                 with col2:
-                    if st.button("🔄 Start Over", type="secondary", use_container_width=True):
+                    if st.button("🔄 Start Over", type="secondary", use_container_width=True, key="start_over_step7"):
                         st.session_state.event_builder_step = 1
                         st.session_state.event_builder_data = {}
                         st.rerun()
                 with col3:
-                    if st.button("✅ Create Event", type="primary", use_container_width=True):
+                    if st.button("✅ Create Event", type="primary", use_container_width=True, key="create_event_step7"):
                         with st.spinner("Creating event with all components..."):
                             # Call the complete event creation function
                             result = event_utility.create_complete_event(
@@ -1410,6 +1364,18 @@ if user_role == 'recorder':
                                 time.sleep(2)
                                 st.rerun()
                             else:
-                                st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
-                                st.write("Please try again or contact an administrator.")
+                                error_msg = result.get('error', 'Unknown error')
+                                st.error(f"❌ Error: {error_msg}")
+                                
+                                # Provide helpful hints based on error type
+                                if 'duplicate key' in str(error_msg).lower() and 'name' in str(error_msg).lower():
+                                    st.warning("💡 **Tip:** An event with this name already exists. Please use a different name.")
+                                elif 'foreign key' in str(error_msg).lower():
+                                    st.warning("💡 **Tip:** One or more selected items (rounds, ranges, clubs) may not exist in the database.")
+                                else:
+                                    st.write("Please try again or contact an administrator.")
+                                
+                                # Show technical details in expander
+                                with st.expander("🔍 Technical Details"):
+                                    st.code(error_msg)
         
