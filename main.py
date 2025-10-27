@@ -2,7 +2,9 @@ import streamlit as st
 import os
 import base64
 import json
-
+from datetime import datetime
+from utility_function.initilize_dbconnection import supabase
+import pandas as pd
 def load_images_as_dataurls(folder):
     dataurls = []
     if not os.path.exists(folder):
@@ -43,10 +45,11 @@ def main():
     Beyond functionality, the Archery Management System aims to foster a vibrant and supportive archery community. We believe technology can strengthen the connection between archers, clubs, and associations — helping them share knowledge, celebrate achievements, and grow the sport together. With an intuitive interface and constantly evolving features, our platform is built to make archery more accessible, organized, and enjoyable for everyone.
     </div>
     """, unsafe_allow_html=True)
+    st.image("images/archery1.jpeg")
 
     
     if not st.session_state.get("logged_in", False):
-        st.info("🔒 Please log in or sign up to view posters and documentation.")
+        st.info("🔒 Please sign in or register to fully use our services.")
         return
 
     st.success(f"Welcome back, {st.session_state.get('fullname', 'User')}!")
@@ -55,7 +58,7 @@ def main():
     # -----------------------
     # Slideshow Poster
     # -----------------------
-    st.subheader("📸 Upcoming Archery Posters & Events")
+    st.subheader("📸 Upcoming Archery Events")
 
     poster_folder = os.path.join(os.path.dirname(__file__), "posters")
     pos = load_images_as_dataurls(poster_folder)
@@ -160,7 +163,46 @@ def main():
         st.warning("⚠️ No images found in the 'posters' folder.")
 
     st.divider()
+    data = supabase.table("club_competition").select(
+    "club_competition_id, name, date_start, date_end"
+).execute()
 
+    competitions = data.data
+    if not competitions:
+        st.info("No competition data found.")
+    else:
+        # --- Tạo DataFrame ---
+        df = pd.DataFrame(competitions)
+
+        # --- Chuyển cột ngày thành kiểu datetime ---
+        df["date_start"] = pd.to_datetime(df["date_start"]).dt.date
+        df["date_end"] = pd.to_datetime(df["date_end"]).dt.date
+
+        # --- Phân loại ---
+        today = datetime.now().date()
+        upcoming = df[df["date_start"] >= today].sort_values("date_start")
+        previous = df[df["date_end"] < today].sort_values("date_end", ascending=False)
+
+        # --- Hiển thị ---
+        st.subheader("📅 Upcoming Competitions")
+        if not upcoming.empty:
+            st.dataframe(
+                upcoming,
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.caption("No upcoming competitions.")
+
+        st.subheader("🏆 Previous Competitions")
+        if not previous.empty:
+            st.dataframe(
+                previous,
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.caption("No previous competitions.")
     # -----------------------
     # PDF Viewer + Download
     # -----------------------
@@ -195,6 +237,6 @@ def main():
                         unsafe_allow_html=True
                     )
 
-
+  
 if __name__ == "__main__":
     main()
