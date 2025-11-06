@@ -437,32 +437,53 @@ def create_eligible_group_with_clubs(club_ids):
         eligible_group_id or None on failure
     """
     try:
-        # Create the eligible group
-        group_response = supabase.table("eligible_group_of_club").insert({}).execute()
+        print(f"Attempting to create eligible group with {len(club_ids)} clubs: {club_ids}")
+        
+        # Create the eligible group with required created_at field
+        group_response = supabase.table("eligible_group_of_club").insert({
+            "created_at": datetime.now().isoformat()
+        }).execute()
+        
+        print(f"Group creation response: {group_response}")
         
         if not group_response.data:
+            print("ERROR: Group response data is empty")
             return None
         
         eligible_group_id = group_response.data[0]['eligible_group_of_club_id']
+        print(f"Created group with ID: {eligible_group_id}")
         
         # Add clubs to the group
         if club_ids:
+            current_time = datetime.now().isoformat()
             members_to_insert = [
-                {"eligible_group_of_club_id": eligible_group_id, "eligible_club_id": club_id}
+                {
+                    "eligible_group_of_club_id": eligible_group_id, 
+                    "eligible_club_id": club_id,
+                    "created_at": current_time
+                }
                 for club_id in club_ids
             ]
             
+            print(f"Inserting members: {members_to_insert}")
             members_response = supabase.table("eligible_club_member").insert(members_to_insert).execute()
             
+            print(f"Members insertion response: {members_response}")
+            
             if not members_response.data:
+                print("ERROR: Members response data is empty, rolling back...")
                 # Rollback: delete the group if we can't add members
                 supabase.table("eligible_group_of_club").delete().eq("eligible_group_of_club_id", eligible_group_id).execute()
                 return None
         
+        print(f"Successfully created eligible group {eligible_group_id}")
         return eligible_group_id
     
     except Exception as e:
         print(f"Error creating eligible group: {e}")
+        print(f"Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_eligible_group_details(eligible_group_id):
