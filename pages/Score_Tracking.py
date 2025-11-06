@@ -76,11 +76,11 @@ if st.session_state['role'] == 'archer':
         # Fetch scores
         scores = get_archer_scores(participating_id, club_competition_id, round_id, range_id)
         
-        if not scores:
-            st.info("No score records found for the selected competition and round.")
-        else:
-            st.success(f"Found {len(scores)} end(s) for this competition and round.")
-            
+        if not scores and st.session_state.get('role') == 'recorder':
+            st.info("the archer does not register for the selected round.")
+        elif not scores and st.session_state.get('role') == 'archer':
+            st.info("you do not register for this round.")
+        else:            
             # Format data for display
             df = format_participating_data_for_display(scores, include_archer_name=False)
             

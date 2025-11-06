@@ -2,6 +2,71 @@ from utility_function.initilize_dbconnection import supabase
 import pandas as pd
 from datetime import datetime
 import streamlit as st
+
+def check_archer_club_eligibility(archer_id, event_type, event_id):
+    """
+    Check if an archer's club is eligible for a specific event.
+    
+    Args:
+        archer_id: The ID of the archer
+        event_type: Either 'yearly club championship' or 'club competition'
+        event_id: The ID of the event (yearly_club_championship_id or club_competition_id)
+    
+    Returns:
+        tuple: (is_eligible: bool, message: str, archer_club_id: int or None)
+    """
+    try:
+        # Get archer's club
+        archer_response = supabase.table("archer").select("club_id").eq("archer_id", archer_id).execute()
+        
+        if not archer_response.data or not archer_response.data[0].get('club_id'):
+            return False, "❌ You are not a member of any club. Please join a club first.", None
+        
+        archer_club_id = archer_response.data[0]['club_id']
+        
+        # Get club name for better error messages
+        club_response = supabase.table("club").select("name").eq("club_id", archer_club_id).execute()
+        club_name = club_response.data[0]['name'] if club_response.data else f"Club {archer_club_id}"
+        
+        # Get event's eligible_group_of_club_id
+        if event_type == "yearly club championship":
+            event_response = supabase.table("yearly_club_championship").select("eligible_group_of_club_id").eq("yearly_club_championship_id", event_id).execute()
+        else:  # club competition
+            event_response = supabase.table("club_competition").select("eligible_group_of_club_id").eq("club_competition_id", event_id).execute()
+        
+        if not event_response.data:
+            return False, "❌ Event not found.", None
+        
+        eligible_group_id = event_response.data[0].get('eligible_group_of_club_id')
+        
+        # If eligible_group_id is None, all clubs are eligible
+        if eligible_group_id is None:
+            return True, f"✅ Your club ({club_name}) is eligible for this event (Open to all clubs).", archer_club_id
+        
+        # Check if archer's club is in the eligible group
+        eligible_check = supabase.table("eligible_club_member").select("eligible_club_id").eq("eligible_group_of_club_id", eligible_group_id).eq("eligible_club_id", archer_club_id).execute()
+        
+        if eligible_check.data:
+            return True, f"✅ Your club ({club_name}) is eligible for this event.", archer_club_id
+        else:
+            # Get list of eligible clubs for informative error message
+            eligible_clubs_response = supabase.table("eligible_club_member").select("eligible_club_id").eq("eligible_group_of_club_id", eligible_group_id).execute()
+            
+            if eligible_clubs_response.data:
+                eligible_club_ids = [row['eligible_club_id'] for row in eligible_clubs_response.data]
+                eligible_clubs = supabase.table("club").select("name").in_("club_id", eligible_club_ids).execute()
+                eligible_club_names = [club['name'] for club in eligible_clubs.data] if eligible_clubs.data else []
+                
+                return False, f"❌ Your club ({club_name}) is not eligible for this event.\n\n**Eligible clubs:** {', '.join(eligible_club_names)}", archer_club_id
+            else:
+                return False, f"❌ Your club ({club_name}) is not eligible for this event.", archer_club_id
+    
+    except Exception as e:
+        print(f"Error checking archer club eligibility: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, f"❌ Error checking eligibility: {str(e)}", None
+
 def get_all_events(event_type="all", date_start=None, date_end=None, category_id=None, eligible_group_id=None):
     """Get filtered events (yearly championships or club competitions)"""
     try:
@@ -549,8 +614,60 @@ def get_club_competition_map():
     data = supabase.table("club_competition").select("club_competition_id, name").execute().data
     return {c["name"] : c["club_competition_id"] for c in data}
 def get_yearly_club_championship_map():
+    """Get mapping of yearly championship names to IDs (all championships, including past)"""
     data = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name").execute().data
     return {c["name"]: c["yearly_club_championship_id"] for c in data}
+
+def get_yearly_club_championship_map_for_enrollment():
+    """Get mapping of yearly championship names to IDs, filtered to show only future championships.
+    A championship is considered future if its earliest child competition starts today or later."""
+    from datetime import date
+    
+    # Get all yearly championships
+    championships = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name").execute().data
+    
+    if not championships:
+        return {}
+    
+    result_map = {}
+    today = date.today().isoformat()
+    
+    for championship in championships:
+        champ_id = championship['yearly_club_championship_id']
+        
+        # Get all competition IDs linked to this championship via event_context
+        event_contexts = supabase.table("event_context")\
+            .select("club_competition_id")\
+            .eq("yearly_club_championship_id", champ_id)\
+            .execute()
+        
+        if not event_contexts.data:
+            # No competitions linked yet, skip this championship
+            continue
+        
+        # Get unique competition IDs
+        comp_ids = list(set([ec['club_competition_id'] for ec in event_contexts.data if ec.get('club_competition_id')]))
+        
+        if not comp_ids:
+            continue
+        
+        # Get the earliest date_start among all linked competitions
+        competitions = supabase.table("club_competition")\
+            .select("date_start")\
+            .in_("club_competition_id", comp_ids)\
+            .execute()
+        
+        if competitions.data:
+            # Find the earliest start date
+            start_dates = [comp['date_start'] for comp in competitions.data if comp.get('date_start')]
+            if start_dates:
+                earliest_date = min(start_dates)
+                # Only include if earliest date is today or in the future
+                if earliest_date >= today:
+                    result_map[championship['name']] = champ_id
+    
+    return result_map
+
 def get_round_map():
     data = supabase.table("round").select("round_id, name").execute().data
     return {c["name"] : c["round_id"] for c in data}
@@ -1268,10 +1385,28 @@ def get_all_club_competition_ids_of_no_yearly_club_championship() -> list:
         print(f"Error fetching club competition IDs of no yearly championship: {e}")
         return []
 def get_club_competition_map_of_no_yearly_club_championship() -> dict:
-    '''Get mapping of club competition names to IDs for competitions not part of any yearly championship'''
+    '''Get mapping of club competition names to IDs for competitions not part of any yearly championship (all, including past)'''
     competition_ids = get_all_club_competition_ids_of_no_yearly_club_championship()
     if not competition_ids:
         return {}
     response = supabase.table("club_competition").select("club_competition_id, name")\
         .in_("club_competition_id", competition_ids).execute()
+    return {row['name']: row['club_competition_id'] for row in response.data}
+
+def get_club_competition_map_of_no_yearly_club_championship_for_enrollment() -> dict:
+    '''Get mapping of club competition names to IDs for competitions not part of any yearly championship.
+    Only includes competitions where date_start is today or in the future.'''
+    from datetime import date
+    
+    competition_ids = get_all_club_competition_ids_of_no_yearly_club_championship()
+    if not competition_ids:
+        return {}
+    
+    today = date.today().isoformat()
+    
+    response = supabase.table("club_competition").select("club_competition_id, name, date_start")\
+        .in_("club_competition_id", competition_ids)\
+        .gte("date_start", today)\
+        .execute()
+    
     return {row['name']: row['club_competition_id'] for row in response.data}

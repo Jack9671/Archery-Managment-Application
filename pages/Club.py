@@ -6,7 +6,8 @@ from utility_function.initilize_dbconnection import supabase
 from utility_function.club_utility import (
     get_all_clubs, get_club_by_id, get_archer_club, create_club,
     join_club, get_club_members, get_pending_enrollment_forms,
-    update_enrollment_status, remove_club_member, check_club_creator
+    update_enrollment_status, remove_club_member, check_club_creator,
+    calculate_age, check_age_eligibility
 )
 
 # Check if user is logged in
@@ -30,12 +31,50 @@ with tab1:
     st.header("Browse Clubs")
     st.write("Search and explore archery clubs")
     
-    search_query = st.text_input("🔍 Search clubs", placeholder="Enter club name...")
+    # Calculate user's age if archer
+    user_age = None
+    if user_role == 'archer':
+        date_of_birth = st.session_state.get('date_of_birth')
+        if date_of_birth:
+            user_age = calculate_age(date_of_birth)
+            st.info(f"👤 Your current age: {user_age} years old")
     
-    if st.button("Search", type="primary") or search_query == "":
-        clubs_df = get_all_clubs(search_query if search_query else None)
-        st.session_state.clubs_df = clubs_df
+    with st.expander("🔎 Search & Filter Clubs", expanded=True):
+        # Search and filter inputs
+        search_query = st.text_input("🔍 Search clubs", placeholder="Enter club name...")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            age_range = st.slider(
+                "Select age range for club eligibility",
+                min_value=5,
+                max_value=100,
+                value=(10, 70),
+                step=1,
+                help="Find clubs that accept this age range"
+            )
+            filter_min_age, filter_max_age = age_range
+        
+        with col2:
+            apply_age_filter = st.checkbox("Apply Age Filter", value=False, help="Filter clubs by selected age range")
+            
+        if st.button("Search", type="primary"):
+            # Apply age filter only if checkbox is checked
+            if apply_age_filter:
+                clubs_df = get_all_clubs(
+                    search_query if search_query else None,
+                    filter_min_age,
+                    filter_max_age
+                )
+            else:
+                clubs_df = get_all_clubs(search_query if search_query else None)
+            st.session_state.clubs_df = clubs_df
     
+    # Initial load - show all clubs without filters
+    if 'clubs_df' not in st.session_state:
+        st.session_state.clubs_df = get_all_clubs()
+
     if 'clubs_df' in st.session_state and not st.session_state.clubs_df.empty:
         st.success(f"Found {len(st.session_state.clubs_df)} club(s)")
         
@@ -80,28 +119,39 @@ with tab1:
                                 else:
                                     st.warning("⚠️ You are already a member of another club")
                             else:
-                                with st.form(f"join_form_{club['club_id']}"):
-                                    join_message = st.text_area(
-                                        "Message to Club Creator",
-                                        placeholder="Tell them why you want to join...",
-                                        key=f"msg_{club['club_id']}"
-                                    )
-                                    join_btn = st.form_submit_button("📝 Request to Join", type="primary")
+                                # Check age eligibility
+                                if user_age is not None:
+                                    min_age = club.get('min_age_to_join', 10)
+                                    max_age = club.get('max_age_to_join', 70)
                                     
-                                    if join_btn:
-                                        result = join_club(
-                                            st.session_state.user_id, 
-                                            club['club_id'],
-                                            join_message if join_message else "I would like to join this club."
-                                        )
-                                        if result == "age_restriction":
-                                            st.error(f"❌ You don't meet the age requirement ({club.get('min_age_to_join', 10)}-{club.get('max_age_to_join', 70)} years old)")
-                                        elif result:
-                                            st.success("✅ Enrollment request submitted!")
-                                            st.balloons()
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to submit request. You may have already applied.")
+                                    if not check_age_eligibility(user_age, min_age, max_age):
+                                        st.error(f"❌ You don't meet the age requirement ({min_age}-{max_age} years old). Your age: {user_age}")
+                                    else:
+                                        # Show join form only if age is eligible
+                                        with st.form(f"join_form_{club['club_id']}"):
+                                            join_message = st.text_area(
+                                                "Message to Club Creator",
+                                                placeholder="Tell them why you want to join...",
+                                                key=f"msg_{club['club_id']}"
+                                            )
+                                            join_btn = st.form_submit_button("📝 Request to Join", type="primary")
+                                            
+                                            if join_btn:
+                                                result = join_club(
+                                                    st.session_state.user_id, 
+                                                    club['club_id'],
+                                                    join_message if join_message else "I would like to join this club."
+                                                )
+                                                if result == "age_restriction":
+                                                    st.error(f"❌ You don't meet the age requirement ({club.get('min_age_to_join', 10)}-{club.get('max_age_to_join', 70)} years old)")
+                                                elif result:
+                                                    st.success("✅ Enrollment request submitted!")
+                                                    st.balloons()
+                                                    st.rerun()
+                                                else:
+                                                    st.error("Failed to submit request. You may have already applied.")
+                                else:
+                                    st.warning("⚠️ Unable to verify your age. Please update your profile.")
     else:
         st.info("No clubs found. Try a different search query.")
     
@@ -150,27 +200,30 @@ with tab1:
                                 
                                 upload_res = supabase.storage.from_("User Uploaded").upload(unique_filename, file_bytes)
                                 logo_url = supabase.storage.from_("User Uploaded").get_public_url(unique_filename)
+                                st.info(f"Logo uploaded successfully!")
                             except Exception as e:
                                 st.warning(f"Logo upload failed: {str(e)}. Using default logo.")
                         
                         # Create club
-                        result = create_club(
-                            st.session_state.user_id,
-                            club_name,
-                            club_description,
-                            formation_date.isoformat(),
-                            logo_url,
-                            min_age,
-                            max_age,
-                            open_to_join
-                        )
+                        with st.spinner("Creating club..."):
+                            result = create_club(
+                                st.session_state.user_id,
+                                club_name,
+                                club_description,
+                                formation_date.isoformat(),
+                                logo_url,
+                                min_age,
+                                max_age,
+                                open_to_join
+                            )
                         
                         if result:
-                            st.success(f"✅ Club created successfully!")
+                            st.success(f"✅ Club '{club_name}' created successfully!")
                             st.balloons()
                             st.rerun()
                         else:
-                            st.error("Failed to create club. Please try again.")
+                            st.error("❌ Failed to create club. Please check the terminal/console for error details.")
+                            st.info("💡 Possible issues: Database connection, invalid data, or permission problems.")
 
 # Tab 2: My Club (Archers only)
 if user_role == 'archer':

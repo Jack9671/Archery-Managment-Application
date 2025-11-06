@@ -90,7 +90,6 @@ with tab_browse:
                 eligible_group_id = None # None means all eligible groups
         elif event_type == "club competition":
             date_start = st.date_input("Start Date (From)", value=None)
-            date_end = st.date_input("End Date (To)", value=None)
             category_map = event_utility.get_category_map()
             category_name = st.selectbox("Category", ["All"] + list(category_map.keys()))
             if category_name != "All":
@@ -192,9 +191,8 @@ with tab_browse:
                 club_competitions_df = pd.DataFrame(club_competitions_df)
                 if not club_competitions_df.empty:
                     if date_start:
-                        club_competitions_df = club_competitions_df[pd.to_datetime(club_competitions_df['start_date']) >= pd.to_datetime(date_start)]
-                    if date_end:
-                        club_competitions_df = club_competitions_df[pd.to_datetime(club_competitions_df['end_date']) <= pd.to_datetime(date_end)]
+                        club_competitions_df = club_competitions_df[pd.to_datetime(club_competitions_df['date_start']) >= pd.to_datetime(date_start)]
+
                     
                     # Only filter by category if a specific category is selected
                     if category_id is not None and not club_competitions_df.empty:
@@ -307,11 +305,6 @@ with tab_browse:
                 # Add instructions
                 st.info("💡 **Interactive Chart**: Click on any block to zoom in and explore deeper levels. Click on the parent (top bar) to zoom out. Hover over blocks to see more information. The deepest children are always **End**.")
                 
-                # Display data summary
-                with st.expander("📊 Hierarchy Data Summary"):
-                    st.write(f"**Total nodes**: {len(hierarchy_df)}")
-                    st.write(f"**Hierarchy levels**: {hierarchy_df['level'].max() + 1}")
-                    st.dataframe(hierarchy_df, use_container_width=True)
             else:
                 st.warning("No hierarchy data found for this event. The event may not have any rounds or competitions configured.")
     
@@ -319,7 +312,7 @@ with tab_browse:
 
 # Tab 2: Event Enrollment/Withdraw
 with tab_enroll:
-    yearly_club_championship_map = event_utility.get_yearly_club_championship_map()
+    yearly_club_championship_map = event_utility.get_yearly_club_championship_map_for_enrollment()
 
     st.header("Event Enrollment / Withdraw")
     if user_role not in ["archer", "recorder"]:
@@ -350,7 +343,7 @@ with tab_enroll:
                     club_competition_id = None
                     round_id = None
             else:
-                club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship()
+                club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship_for_enrollment()
                 club_competition_options = list(club_competition_map.keys())
                 club_competition_name = st.selectbox("club competition", club_competition_options if club_competition_options else ["No competitions available"])
                 if club_competition_name and club_competition_name != "No competitions available":
@@ -385,7 +378,7 @@ with tab_enroll:
                         club_competition_id = None
                     round_id = None
                 else:
-                    club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship()
+                    club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship_for_enrollment()
                     club_competition_options = list(club_competition_map.keys())
                     club_competition_name = st.selectbox("club competition*", club_competition_options if club_competition_options else ["No competitions available"])
                     if club_competition_name and club_competition_name != "No competitions available":
@@ -400,21 +393,44 @@ with tab_enroll:
         submit_button = st.button("📤 Submit Request", type="primary", use_container_width=True, key="submit_request_form_btn")
         if submit_button:
             try:
-                # Find creator of the event to set as reviewer
-                reviewer_id = None
-                if apply_for_option == "yearly club championship" and yearly_club_championship_id:
-                    event_creator = supabase.table("yearly_club_championship").select("creator_id").eq("yearly_club_championship_id", yearly_club_championship_id).execute().data
-                    if event_creator:
-                        reviewer_id = event_creator[0]['creator_id']
-                elif apply_for_option == "club competition" and club_competition_id:
-                    event_creator = supabase.table("club_competition").select("creator_id").eq("club_competition_id", club_competition_id).execute().data
-                    if event_creator:
-                        reviewer_id = event_creator[0]['creator_id']
-                
                 # Validate that we have required IDs
                 if not yearly_club_championship_id and not club_competition_id:
                     st.error("Please select a valid event before submitting.")
                 else:
+                    # Archer-only validation: Check if archer's club is eligible for the event
+                    if user_role == 'archer':
+                        # Determine event type and ID
+                        if yearly_club_championship_id:
+                            check_event_type = "yearly club championship"
+                            check_event_id = yearly_club_championship_id
+                        else:
+                            check_event_type = "club competition"
+                            check_event_id = club_competition_id
+                        
+                        # Check eligibility
+                        is_eligible, eligibility_message, archer_club_id = event_utility.check_archer_club_eligibility(
+                            st.session_state.user_id,
+                            check_event_type,
+                            check_event_id
+                        )
+                        
+                        if not is_eligible:
+                            st.error(eligibility_message)
+                            st.stop()
+                        else:
+                            st.success(eligibility_message)
+                    
+                    # Find creator of the event to set as reviewer
+                    reviewer_id = None
+                    if apply_for_option == "yearly club championship" and yearly_club_championship_id:
+                        event_creator = supabase.table("yearly_club_championship").select("creator_id").eq("yearly_club_championship_id", yearly_club_championship_id).execute().data
+                        if event_creator:
+                            reviewer_id = event_creator[0]['creator_id']
+                    elif apply_for_option == "club competition" and club_competition_id:
+                        event_creator = supabase.table("club_competition").select("creator_id").eq("club_competition_id", club_competition_id).execute().data
+                        if event_creator:
+                            reviewer_id = event_creator[0]['creator_id']
+                    
                     response = supabase.table("request_competition_form").insert({
                         "sender_id": st.session_state.user_id,
                         "type": type,
