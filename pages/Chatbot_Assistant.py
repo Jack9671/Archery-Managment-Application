@@ -70,7 +70,7 @@ if st.session_state.current_chat:
                 st.markdown(msg["content"])
 
         # Nhập câu hỏi mới
-        user_input = st.chat_input("Nhập câu hỏi của bạn về bắn cung...")
+        user_input = st.chat_input("Ask a question about Archery...")
         if user_input:
             # Hiển thị tin nhắn người dùng
             st.chat_message("user").markdown(user_input)
