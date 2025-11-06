@@ -39,7 +39,7 @@ def get_archer_club(archer_id):
         print(f"Error fetching archer club: {e}")
         return None
 
-def create_club(creator_id, club_name, club_description, formation_date, club_logo_url=None):
+def create_club(creator_id, club_name, club_description, formation_date, club_logo_url=None, min_age=10, max_age=70, open_to_join=True):
     """Create a new club"""
     try:
         response = supabase.table("club").insert({
@@ -47,7 +47,10 @@ def create_club(creator_id, club_name, club_description, formation_date, club_lo
             "name": club_name,
             "about_club": club_description,
             "formation_date": formation_date,
-            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png"
+            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png",
+            "min_age_to_join": min_age,
+            "max_age_to_join": max_age,
+            "open_to_join": open_to_join
         }).execute()
         
         if response.data:
@@ -63,6 +66,43 @@ def create_club(creator_id, club_name, club_description, formation_date, club_lo
 def join_club(archer_id, club_id, sender_word="I would like to join this club."):
     """Request to join a club (submit enrollment form)"""
     try:
+        # Get club age restrictions
+        club_response = supabase.table("club").select("min_age_to_join, max_age_to_join, open_to_join").eq("club_id", club_id).execute()
+        
+        if not club_response.data:
+            print(f"Club {club_id} not found")
+            return None
+        
+        club = club_response.data[0]
+        
+        # Check if club is open to join
+        if not club.get('open_to_join', True):
+            print(f"Club {club_id} is not open to join")
+            return None
+        
+        # Get archer's date of birth to calculate age
+        archer_response = supabase.table("archer").select("date_of_birth").eq("archer_id", archer_id).execute()
+        
+        if not archer_response.data:
+            print(f"Archer {archer_id} not found")
+            return None
+        
+        date_of_birth = archer_response.data[0].get('date_of_birth')
+        
+        if date_of_birth:
+            from datetime import datetime
+            dob = datetime.fromisoformat(date_of_birth.replace('Z', '+00:00'))
+            today = datetime.now()
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            
+            # Check age restrictions
+            min_age = club.get('min_age_to_join', 10)
+            max_age = club.get('max_age_to_join', 70)
+            
+            if age < min_age or age > max_age:
+                print(f"Archer {archer_id} (age {age}) does not meet age requirement ({min_age}-{max_age})")
+                return "age_restriction"
+        
         # Check if there's already a pending request
         existing = supabase.table("club_enrollment_form").select("*").eq("sender_id", archer_id).eq("club_id", club_id).eq("status", "pending").execute()
         

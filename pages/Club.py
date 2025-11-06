@@ -60,41 +60,48 @@ with tab1:
                 with col2:
                     st.write(f"**Club Name:** {club['name']}")
                     st.write(f"**Formation Date:** {club.get('formation_date', 'N/A')}")
+                    st.write(f"**Age Requirement:** {club.get('min_age_to_join', 10)} - {club.get('max_age_to_join', 70)} years old")
                     st.write(f"**Description:**")
                     st.write(club.get('about_club', 'No description available'))
                     st.write(f"**Open to Join:** {'Yes' if club.get('open_to_join', True) else 'No'}")
                     
                     # Join button for archers
                     if user_role == 'archer':
-                        # Check if archer already has a club
-                        my_club = get_archer_club(st.session_state.user_id)
-                        
-                        if my_club:
-                            if my_club['club_id'] == club['club_id']:
-                                st.info("✅ You are already a member of this club")
-                            else:
-                                st.warning("⚠️ You are already a member of another club")
+                        # Check if club is open to join
+                        if not club.get('open_to_join', True):
+                            st.warning("⚠️ This club is currently not accepting new members")
                         else:
-                            with st.form(f"join_form_{club['club_id']}"):
-                                join_message = st.text_area(
-                                    "Message to Club Creator",
-                                    placeholder="Tell them why you want to join...",
-                                    key=f"msg_{club['club_id']}"
-                                )
-                                join_btn = st.form_submit_button("📝 Request to Join", type="primary")
-                                
-                                if join_btn:
-                                    result = join_club(
-                                        st.session_state.user_id, 
-                                        club['club_id'],
-                                        join_message if join_message else "I would like to join this club."
+                            # Check if archer already has a club
+                            my_club = get_archer_club(st.session_state.user_id)
+                            
+                            if my_club:
+                                if my_club['club_id'] == club['club_id']:
+                                    st.info("✅ You are already a member of this club")
+                                else:
+                                    st.warning("⚠️ You are already a member of another club")
+                            else:
+                                with st.form(f"join_form_{club['club_id']}"):
+                                    join_message = st.text_area(
+                                        "Message to Club Creator",
+                                        placeholder="Tell them why you want to join...",
+                                        key=f"msg_{club['club_id']}"
                                     )
-                                    if result:
-                                        st.success("✅ Enrollment request submitted!")
-                                        st.balloons()
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to submit request. You may have already applied.")
+                                    join_btn = st.form_submit_button("📝 Request to Join", type="primary")
+                                    
+                                    if join_btn:
+                                        result = join_club(
+                                            st.session_state.user_id, 
+                                            club['club_id'],
+                                            join_message if join_message else "I would like to join this club."
+                                        )
+                                        if result == "age_restriction":
+                                            st.error(f"❌ You don't meet the age requirement ({club.get('min_age_to_join', 10)}-{club.get('max_age_to_join', 70)} years old)")
+                                        elif result:
+                                            st.success("✅ Enrollment request submitted!")
+                                            st.balloons()
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to submit request. You may have already applied.")
     else:
         st.info("No clubs found. Try a different search query.")
     
@@ -114,6 +121,15 @@ with tab1:
                 formation_date = st.date_input("Formation Date*", value=date.today(), help="The date this club was formed")
                 club_description = st.text_area("Description*", placeholder="Describe your club...")
                 
+                # Age restrictions
+                col1, col2 = st.columns(2)
+                with col1:
+                    min_age = st.number_input("Minimum Age to Join*", min_value=5, max_value=100, value=10, step=1, help="Minimum age requirement for joining")
+                with col2:
+                    max_age = st.number_input("Maximum Age to Join*", min_value=5, max_value=100, value=70, step=1, help="Maximum age requirement for joining")
+                
+                open_to_join = st.checkbox("Open to Join", value=True, help="Allow archers to request to join this club")
+                
                 club_logo = st.file_uploader("Club Logo (Optional)", type=["png", "jpg", "jpeg"])
                 
                 create_club_btn = st.form_submit_button("🏹 Create Club", type="primary")
@@ -121,6 +137,8 @@ with tab1:
                 if create_club_btn:
                     if not club_name or not formation_date or not club_description:
                         st.error("Please fill in all required fields!")
+                    elif min_age > max_age:
+                        st.error("Minimum age cannot be greater than maximum age!")
                     else:
                         # Handle logo upload
                         logo_url = None
@@ -141,7 +159,10 @@ with tab1:
                             club_name,
                             club_description,
                             formation_date.isoformat(),
-                            logo_url
+                            logo_url,
+                            min_age,
+                            max_age,
+                            open_to_join
                         )
                         
                         if result:
@@ -176,6 +197,8 @@ if user_role == 'archer':
                 st.subheader(my_club['name'])
                 st.write(f"**Formation Date:** {my_club.get('formation_date', 'N/A')}")
                 st.write(f"**Club ID:** {my_club['club_id']}")
+                st.write(f"**Age Requirement:** {my_club.get('min_age_to_join', 10)} - {my_club.get('max_age_to_join', 70)} years old")
+                st.write(f"**Open to Join:** {'Yes' if my_club.get('open_to_join', True) else 'No'}")
                 st.write(f"**Description:**")
                 st.write(my_club.get('about_club', 'No description'))
             
@@ -184,6 +207,61 @@ if user_role == 'archer':
             
             if is_creator:
                 st.success("👑 You are the creator of this club")
+                
+                # Club Settings Section (Creator only)
+                st.divider()
+                st.subheader("⚙️ Club Settings")
+                
+                with st.form("club_settings_form"):
+                    st.write("**Update Club Enrollment Status**")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        new_min_age = st.number_input(
+                            "Minimum Age", 
+                            min_value=5, 
+                            max_value=100, 
+                            value=int(my_club.get('min_age_to_join', 10)), 
+                            step=1
+                        )
+                    
+                    with col2:
+                        new_max_age = st.number_input(
+                            "Maximum Age", 
+                            min_value=5, 
+                            max_value=100, 
+                            value=int(my_club.get('max_age_to_join', 70)), 
+                            step=1
+                        )
+                    
+
+                    new_open_to_join = st.checkbox(
+                        "Open to Join", 
+                        value=my_club.get('open_to_join', True),
+                        help="Allow new archers to request to join this club"
+                    )
+                    
+                    update_settings_btn = st.form_submit_button("💾 Update Settings", type="primary")
+                    
+                    if update_settings_btn:
+                        if new_min_age > new_max_age:
+                            st.error("Minimum age cannot be greater than maximum age!")
+                        else:
+                            try:
+                                response = supabase.table("club").update({
+                                    "min_age_to_join": new_min_age,
+                                    "max_age_to_join": new_max_age,
+                                    "open_to_join": new_open_to_join
+                                }).eq("club_id", my_club['club_id']).execute()
+                                
+                                if response.data:
+                                    st.success("✅ Club settings updated successfully!")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update settings.")
+                            except Exception as e:
+                                st.error(f"Error updating settings: {str(e)}")
             
             st.divider()
             st.subheader("👥 Club Members")

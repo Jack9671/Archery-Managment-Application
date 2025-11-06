@@ -28,32 +28,31 @@ if "conversations" not in st.session_state:
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = None  # hội thoại hiện tại
 
-# --- SIDEBAR: Quản lý hội thoại ---
-st.sidebar.header("💬 Chat Sessions")
-
-# Nút tạo hội thoại mới
-if st.button("➕ New Chat"):
-    new_chat = {
-        "id": len(st.session_state.conversations) + 1,
-        "messages": []
-    }
-    st.session_state.conversations.append(new_chat)
-    st.session_state.current_chat = new_chat["id"]
-    st.rerun()
-
-# Hiển thị danh sách hội thoại
-for chat in st.session_state.conversations:
-    col1, col2 = st.sidebar.columns([4, 1])
-    if col1.button(f"Chat {chat['id']}", key=f"select_{chat['id']}"):
-        st.session_state.current_chat = chat["id"]
+# ---  Quản lý hội thoại ---
+with st.expander("💬 Chat Sessions", expanded=True):
+    # Nút tạo hội thoại mới
+    if st.button("➕ New Chat", use_container_width=True):
+        new_chat = {
+            "id": len(st.session_state.conversations) + 1,
+            "messages": []
+        }
+        st.session_state.conversations.append(new_chat)
+        st.session_state.current_chat = new_chat["id"]
         st.rerun()
-    if col2.button("🗑", key=f"delete_{chat['id']}"):
-        st.session_state.conversations = [
-            c for c in st.session_state.conversations if c["id"] != chat["id"]
-        ]
-        if st.session_state.current_chat == chat["id"]:
-            st.session_state.current_chat = None
-        st.rerun()
+
+    # Hiển thị danh sách hội thoại
+    for chat in st.session_state.conversations:
+        col1, col2 = st.columns([4, 1])
+        if col1.button(f"Chat {chat['id']}", key=f"select_{chat['id']}", use_container_width=True):
+            st.session_state.current_chat = chat["id"]
+            st.rerun()
+        if col2.button("🗑", key=f"delete_{chat['id']}"):
+            st.session_state.conversations = [
+                c for c in st.session_state.conversations if c["id"] != chat["id"]
+            ]
+            if st.session_state.current_chat == chat["id"]:
+                st.session_state.current_chat = None
+            st.rerun()
 
 # --- HIỂN THỊ NỘI DUNG CHAT ĐANG CHỌN ---
 if st.session_state.current_chat:
