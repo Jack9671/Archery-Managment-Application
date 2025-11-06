@@ -26,8 +26,8 @@ else:
     tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule", "🎯 My Events"])
     tab_browse = tabs[0]
     tab_enroll = tabs[1]
-    tab_schedule = tabs[3]
-    tab_my_events = tabs[4]
+    tab_schedule = tabs[2]
+    tab_my_events = tabs[3]
 
 # Tab 1: Browse Events
 with tab_browse:
