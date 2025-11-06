@@ -20,14 +20,14 @@ st.write(f"Welcome, {st.session_state.get('fullname')}!")
 user_role = st.session_state.get('role')
 
 if user_role == 'recorder':
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🎯 My Events", "🏢 Club Groups", "⚙️ Event Management"])
-    tab_browse, tab_enroll, tab_review, tab_schedule, tab_my_events, tab_club_groups, tab_manage = tabs
+    tabs = st.tabs(["🎯 My Events", "🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📋 Review Forms", "📅 Event Schedule", "🏢 Club Groups", "⚙️ Event Management"])
+    tab_my_events, tab_browse, tab_enroll, tab_review, tab_schedule, tab_club_groups, tab_manage = tabs
 else:
-    tabs = st.tabs(["🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule", "🎯 My Events"])
-    tab_browse = tabs[0]
-    tab_enroll = tabs[1]
-    tab_schedule = tabs[2]
-    tab_my_events = tabs[3]
+    tabs = st.tabs([ "🎯 My Events","🔍 Browse Events", "📝 Event Enrollment/Withdraw", "📅 Event Schedule"])
+    tab_my_events = tabs[0]
+    tab_browse = tabs[1]
+    tab_enroll = tabs[2]
+    tab_schedule = tabs[3]
 
 # Tab 1: Browse Events
 with tab_browse:
@@ -689,17 +689,13 @@ with tab_my_events:
     st.divider()
     st.subheader("📊 Summary")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
         st.metric("Total Championships", len(championships_df))
-    
     with col2:
         st.metric("Total Competitions", len(competitions_df))
-    
-    with col3:
-        total_events = len(championships_df) + len(competitions_df)
-        st.metric("Total Events", total_events)
+
 
 # Recorder-only tabs
 if user_role == 'recorder':
