@@ -544,8 +544,19 @@ def get_discipline_map():
 
 def get_discipline_id_to_name_map():
     """Get mapping from discipline_id to discipline name"""
-    data = supabase.table("discipline").select("discipline_id, name").execute().data
-    return { c["discipline_id"] : c["name"] for c in data}
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            data = supabase.table("discipline").select("discipline_id, name").execute().data
+            return { c["discipline_id"] : c["name"] for c in data}
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)  # Wait 500ms before retry
+                continue
+            else:
+                st.error(f"Error fetching disciplines after {max_retries} attempts: {str(e)}")
+                return {}
 
 def get_equipment_map():
     data = supabase.table("equipment").select("equipment_id, name").execute().data
@@ -553,8 +564,19 @@ def get_equipment_map():
 
 def get_equipment_id_to_name_map():
     """Get mapping from equipment_id to equipment name"""
-    data = supabase.table("equipment").select("equipment_id, name").execute().data
-    return { c["equipment_id"] : c["name"] for c in data}
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            data = supabase.table("equipment").select("equipment_id, name").execute().data
+            return { c["equipment_id"] : c["name"] for c in data}
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)  # Wait 500ms before retry
+                continue
+            else:
+                st.error(f"Error fetching equipment after {max_retries} attempts: {str(e)}")
+                return {}
 
 def get_age_division_map():
     # age_division table does not have name, just min_age and max_age, so we need to create a name like "18-25"
@@ -563,23 +585,45 @@ def get_age_division_map():
 
 def get_age_division_id_to_name_map():
     """Get mapping from age_division_id to age range string"""
-    data = supabase.table("age_division").select("age_division_id, min_age, max_age").execute().data
-    return {c["age_division_id"]: f"{c['min_age']}-{c['max_age']}" for c in data}
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            data = supabase.table("age_division").select("age_division_id, min_age, max_age").execute().data
+            return {c["age_division_id"]: f"{c['min_age']}-{c['max_age']}" for c in data}
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)  # Wait 500ms before retry
+                continue
+            else:
+                st.error(f"Error fetching age divisions after {max_retries} attempts: {str(e)}")
+                return {}
 
 def get_category_map():
     #category table does not have name, just discipline_id, age_division_id, equipment_id, so we need to create a name like "Outdoor Target Archery · 18-25 · Longbow"
+    import time
     discipline_id_to_name = get_discipline_id_to_name_map()
     age_division_id_to_name = get_age_division_id_to_name_map()
     equipment_id_to_name = get_equipment_id_to_name_map()
 
     category_map = {}
-    for c in supabase.table("category").select("category_id, discipline_id, age_division_id, equipment_id").execute().data:
-        discipline_name = discipline_id_to_name.get(c['discipline_id'], 'Unknown Discipline')
-        age_division_name = age_division_id_to_name.get(c['age_division_id'], 'Unknown Age Division')
-        equipment_name = equipment_id_to_name.get(c['equipment_id'], 'Unknown Equipment')
-        name = f"{discipline_name} · {age_division_name} · {equipment_name}"
-        category_map[name] = c["category_id"]
-    return category_map
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            for c in supabase.table("category").select("category_id, discipline_id, age_division_id, equipment_id").execute().data:
+                discipline_name = discipline_id_to_name.get(c['discipline_id'], 'Unknown Discipline')
+                age_division_name = age_division_id_to_name.get(c['age_division_id'], 'Unknown Age Division')
+                equipment_name = equipment_id_to_name.get(c['equipment_id'], 'Unknown Equipment')
+                name = f"{discipline_name} · {age_division_name} · {equipment_name}"
+                category_map[name] = c["category_id"]
+            return category_map
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)  # Wait 500ms before retry
+                continue
+            else:
+                st.error(f"Error fetching categories after {max_retries} attempts: {str(e)}")
+                return {}
 
 def get_club_map():
     data = supabase.table("club").select("club_id, name").execute().data
