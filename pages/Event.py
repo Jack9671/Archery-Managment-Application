@@ -89,7 +89,7 @@ with tab_browse:
                 list_of_eligible_group_id = None
                 eligible_group_id = None # None means all eligible groups
         elif event_type == "club competition":
-            date_start = st.date_input("Start Date (From)", value=None)
+            date_start = st.date_input("Start Date (From)", value=None, help="choose the start date to filter competitions starting from this date or after this date")
             category_map = event_utility.get_category_map()
             category_name = st.selectbox("Category", ["All"] + list(category_map.keys()))
             if category_name != "All":
