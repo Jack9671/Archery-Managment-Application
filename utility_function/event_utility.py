@@ -932,6 +932,8 @@ def get_user_joined_events(user_id, time_filter="all"):
         championships_df = pd.DataFrame()
         if not championship_requests.empty:
             championship_ids = championship_requests['yearly_club_championship_id'].unique().tolist()
+            #to int
+            championship_ids = [int(cid) for cid in championship_ids]
             champ_response = supabase.table("yearly_club_championship")\
                 .select("*")\
                 .in_("yearly_club_championship_id", championship_ids)\
