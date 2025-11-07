@@ -125,8 +125,8 @@ def update_participating_scores(updates):
                 update.get('score_2nd_arrow', 0) +
                 update.get('score_3rd_arrow', 0) +
                 update.get('score_4th_arrow', 0) +
-                update.get('score_5st_arrow', 0) +
-                update.get('score_6st_arrow', 0)
+                update.get('score_5th_arrow', 0) +
+                update.get('score_6th_arrow', 0)
             )
             
             # Prepare update data
@@ -135,8 +135,8 @@ def update_participating_scores(updates):
                 'score_2nd_arrow': update.get('score_2nd_arrow'),
                 'score_3rd_arrow': update.get('score_3rd_arrow'),
                 'score_4th_arrow': update.get('score_4th_arrow'),
-                'score_5st_arrow': update.get('score_5st_arrow'),
-                'score_6st_arrow': update.get('score_6st_arrow'),
+                'score_5th_arrow': update.get('score_5th_arrow'),
+                'score_6th_arrow': update.get('score_6th_arrow'),
                 'sum_score': sum_score,
                 'updated_at': 'now()'
             }
@@ -186,8 +186,8 @@ def format_participating_data_for_display(records, include_archer_name=False):
             'Arrow 2': record['score_2nd_arrow'],
             'Arrow 3': record['score_3rd_arrow'],
             'Arrow 4': record['score_4th_arrow'],
-            'Arrow 5': record['score_5st_arrow'],
-            'Arrow 6': record['score_6st_arrow'],
+            'Arrow 5': record['score_5th_arrow'],
+            'Arrow 6': record['score_6th_arrow'],
             'Total': record['sum_score'],
             'Status': record['status'],
             # Hidden fields for update

@@ -3,7 +3,7 @@ import pandas as pd
 from utility_function.initilize_dbconnection import supabase
 from utility_function.admin_utility import (
     get_total_accounts, get_deactivated_accounts_count, get_accounts_by_role,
-    filter_accounts, search_account_by_email_and_dob, update_account,
+    filter_accounts, search_account_by_email, update_account,
     get_pending_reports, update_report_status, delete_report
 )
 from utility_function.sign_up_log_in_utility import get_countries
@@ -133,19 +133,9 @@ with tab3:
     
     # Search section
     with st.form("search_account_form"):
-        st.subheader("Search Account")
-        col1, col2 = st.columns(2)
+        st.subheader("Search Account")        
+        search_email = st.text_input("Email Address*")
         
-        with col1:
-            search_email = st.text_input("Email Address*")
-        
-        with col2:
-            search_dob = st.date_input(
-                "Date of Birth*",
-                value=date(2000, 1, 1),
-                min_value=date(1900, 1, 1),
-                max_value=date.today()
-            )
         
         search_button = st.form_submit_button("🔍 Search Account", type="primary")
         
@@ -153,7 +143,7 @@ with tab3:
             if not search_email:
                 st.error("Please enter an email address")
             else:
-                account = search_account_by_email_and_dob(search_email, search_dob.isoformat())
+                account = search_account_by_email(search_email)
                 
                 if account:
                     st.session_state.selected_account = account
@@ -202,7 +192,7 @@ with tab3:
                     st.success("Account updated successfully!")
                     st.balloons()
                     # Refresh the account data
-                    updated_account = search_account_by_email_and_dob(updated_email, account['date_of_birth'])
+                    updated_account = search_account_by_email(updated_email)
                     if updated_account:
                         st.session_state.selected_account = updated_account
                     st.rerun()

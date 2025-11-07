@@ -5,6 +5,7 @@
 -- Clear existing data (optional - comment out if you want to keep existing data)
 -- TRUNCATE TABLE account CASCADE;
 
+START TRANSACTION;
 -- ============================================
 -- 1. ACCOUNTS (Various roles)
 -- ============================================
@@ -197,7 +198,7 @@ VALUES
 -- 12. EQUIVALENT ROUNDS
 -- ============================================
 
-INSERT INTO equivalent_round (round_id, equivalent_round_id, date_valid_start, date_valud_end, created_at, updated_at)
+INSERT INTO equivalent_round (round_id, equivalent_round_id, date_valid_start, date_valid_end, created_at, updated_at)
 VALUES 
 (1, 2, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00', NOW(), NOW()),
 (2, 1, '2024-01-01 00:00:00+00', '2025-12-31 23:59:59+00', NOW(), NOW());
@@ -297,7 +298,7 @@ VALUES
 -- 19. PARTICIPATING (Archer scores)
 -- ============================================
 
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Archer 7 in Competition 1
 (7, 1, 9, 10, 9, 8, 10, 9, 55, 'competition', 'eligible', '2025-01-15 09:30:00+00', '2025-01-15 09:30:00+00'),
@@ -379,7 +380,7 @@ VALUES
 -- 26. ADDITIONAL PARTICIPATING RECORDS (Practice)
 -- ============================================
 
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Practice rounds for various archers (using different event contexts to avoid duplicates)
 (7, 2, 8, 9, 8, 9, 8, 7, 49, 'practice', 'eligible', '2024-12-20 10:00:00+00', '2024-12-20 10:00:00+00'),
@@ -410,7 +411,7 @@ VALUES
 (1, 4, 1, 1, 3);
 
 -- Add more participating records for these events
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5st_arrow, score_6st_arrow, sum_score, type, status, created_at, updated_at)
+INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
 VALUES 
 -- Archer 7 continuing competition 1
 (7, 14, 9, 10, 9, 9, 8, 10, 55, 'competition', 'eligible', '2025-01-15 10:15:00+00', '2025-01-15 10:15:00+00'),
@@ -463,7 +464,7 @@ VALUES
 (16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2024-10-01 10:00:00+00', '2024-10-05 15:00:00+00'),
 (11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2025-01-20 11:00:00+00', '2025-01-22 16:00:00+00');
 
-
+COMMIT;
 
 -- ============================================
 -- 30. SUMMARY & VERIFICATION QUERIES
