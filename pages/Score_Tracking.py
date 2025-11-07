@@ -167,8 +167,8 @@ elif st.session_state['role'] == 'recorder':
     # Recorder view - single tab
     st.header("Score Tracking for Recorder")
     
-    # Get available club competitions, rounds, and archers
-    club_competition_map = score_tracking_utility.get_club_competition_map()
+    # Get available club competitions that this recorder is connected with
+    club_competition_map = score_tracking_utility.get_club_competition_map_of_a_recorder(st.session_state['user_id'])
     
     if not club_competition_map:
         st.warning("No competitions available. Please write form to apply to record for competitions.")

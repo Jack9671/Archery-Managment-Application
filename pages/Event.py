@@ -187,10 +187,29 @@ with tab_browse:
                     
             elif event_type == "club competition":
                 #apply filter for date range, category_id, eligible_group_id by supabase query
+                # First, get club competitions that are NOT linked to any yearly club championship
+                event_contexts = supabase.table("event_context").select("club_competition_id, yearly_club_championship_id").not_.is_("club_competition_id", "null").execute().data
+                event_contexts_df = pd.DataFrame(event_contexts)
+                
+                # Find competition IDs that have null yearly_club_championship_id
+                if not event_contexts_df.empty:
+                    standalone_competition_ids = event_contexts_df[event_contexts_df['yearly_club_championship_id'].isna()]['club_competition_id'].unique().tolist()
+                else:
+                    standalone_competition_ids = []
+                
+                # Get club competitions data
                 club_competitions_df = supabase.table("club_competition").select("*").execute().data
                 club_competitions_df = pd.DataFrame(club_competitions_df)
+                
                 if not club_competitions_df.empty:
-                    if date_start:
+                    # Filter to only include standalone competitions (not part of any championship)
+                    if standalone_competition_ids:
+                        club_competitions_df = club_competitions_df[club_competitions_df['club_competition_id'].isin(standalone_competition_ids)]
+                    else:
+                        # No standalone competitions found
+                        club_competitions_df = pd.DataFrame()
+                    
+                    if not club_competitions_df.empty and date_start:
                         club_competitions_df = club_competitions_df[pd.to_datetime(club_competitions_df['date_start']) >= pd.to_datetime(date_start)]
 
                     
@@ -330,8 +349,8 @@ with tab_enroll:
             action = st.selectbox("Action", ["enrol", "withdraw"])
             if apply_for_option == "yearly club championship":
                 yearly_club_championship_options = list(yearly_club_championship_map.keys())
-                yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No championships available"])
-                if yearly_club_championship_name and yearly_club_championship_name != "No championships available":
+                yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No future championships available to register"])
+                if yearly_club_championship_name and yearly_club_championship_name != "No future championships available to register":
                     yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                     club_competition_id = None
                     round_map = event_utility.get_round_map_of_an_event('yearly club championship', yearly_club_championship_id)
@@ -345,8 +364,8 @@ with tab_enroll:
             else:
                 club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship_for_enrollment()
                 club_competition_options = list(club_competition_map.keys())
-                club_competition_name = st.selectbox("club competition", club_competition_options if club_competition_options else ["No competitions available"])
-                if club_competition_name and club_competition_name != "No competitions available":
+                club_competition_name = st.selectbox("club competition", club_competition_options if club_competition_options else ["No future club competition available to register"])
+                if club_competition_name and club_competition_name != "No future club competition available to register":
                     club_competition_id = club_competition_map[club_competition_name]
                     yearly_club_championship_id = None
                     round_map = event_utility.get_round_map_of_an_event('club competition', club_competition_id)
@@ -369,8 +388,8 @@ with tab_enroll:
             with col2:
                 if apply_for_option == "yearly club championship":
                     yearly_club_championship_options = list(yearly_club_championship_map.keys())
-                    yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No championships available"])
-                    if yearly_club_championship_name and yearly_club_championship_name != "No championships available":
+                    yearly_club_championship_name = st.selectbox("yearly club championship*", yearly_club_championship_options if yearly_club_championship_options else ["No future championships available to register"])
+                    if yearly_club_championship_name and yearly_club_championship_name != "No future championships available to register":
                         yearly_club_championship_id = yearly_club_championship_map[yearly_club_championship_name]
                         club_competition_id = None
                     else:
@@ -380,8 +399,8 @@ with tab_enroll:
                 else:
                     club_competition_map = event_utility.get_club_competition_map_of_no_yearly_club_championship_for_enrollment()
                     club_competition_options = list(club_competition_map.keys())
-                    club_competition_name = st.selectbox("club competition*", club_competition_options if club_competition_options else ["No competitions available"])
-                    if club_competition_name and club_competition_name != "No competitions available":
+                    club_competition_name = st.selectbox("club competition*", club_competition_options if club_competition_options else ["No future club competition available to register"])
+                    if club_competition_name and club_competition_name != "No future club competition available to register":
                         club_competition_id = club_competition_map[club_competition_name]
                         yearly_club_championship_id = None
                     else:
@@ -720,6 +739,10 @@ if user_role == 'recorder':
         st.header("📋 Review Request Forms")
         st.write("View and review enrollment/withdrawal forms, please configure your filters below to find the forms you want to review.")
         st.info("Options for you to select come from the events you have created or have been applied to record for.")
+        
+        # Clear session state if switching tabs or when no event is available
+        # This prevents showing old data from previous sessions
+        
         with st.container(border =True):
             # Filter options
             #yearly_club_championship or club_competition
@@ -728,31 +751,58 @@ if user_role == 'recorder':
             with col1: 
                 if option == "yearly club championship":
                     yearly_championship_map = event_utility.get_yearly_club_championship_map_of_a_recorder(user_id=st.session_state.user_id)
-                    filter_event_name = st.selectbox("yearly club championship", list(yearly_championship_map.keys()))
-                    filter_event_id = yearly_championship_map[filter_event_name]
+                    if yearly_championship_map:
+                        filter_event_name = st.selectbox("yearly club championship", list(yearly_championship_map.keys()))
+                        filter_event_id = yearly_championship_map[filter_event_name]
+                    else:
+                        st.warning("No yearly club championships available for you to review because you have not created any event or applied to be a recorder in other events.")
+                        filter_event_name = None
+                        filter_event_id = None
+                        # Clear any previous session data when no events available
+                        if 'review_forms_data' in st.session_state:
+                            del st.session_state['review_forms_data']
                 else:
                     club_competition_map = event_utility.get_club_competition_map_of_a_recorder(user_id=st.session_state.user_id)
-                    filter_event_name = st.selectbox("club competition", list(club_competition_map.keys()))
-                    filter_event_id = club_competition_map[filter_event_name]
+                    if club_competition_map:
+                        filter_event_name = st.selectbox("club competition", list(club_competition_map.keys()))
+                        filter_event_id = club_competition_map[filter_event_name]
+                    else:
+                        st.warning("No club competitions available for you to review because you have not created any event or applied to be a recorder in other events.")
+                        filter_event_name = None
+                        filter_event_id = None
+                        # Clear any previous session data when no events available
+                        if 'review_forms_data' in st.session_state:
+                            del st.session_state['review_forms_data']
             with col2:
                 filter_type = st.selectbox("type", [ "participating", "recording"])
-                round_map = event_utility.get_round_map_of_an_event(event_type=option, event_id=filter_event_id)
+                if filter_event_id is not None:
+                    round_map = event_utility.get_round_map_of_an_event(event_type=option, event_id=filter_event_id)
+                else:
+                    round_map = {}
                     
             with col3:
                 if filter_type == "recording":
                     filter_round_id = None
                 elif filter_type == "participating":
-                    filter_round_name = st.selectbox("round", ["All"] + list(round_map.keys()))  
-                    if filter_round_name == "All":
-                        filter_round_id = None
+                    if round_map:
+                        filter_round_name = st.selectbox("round", ["All"] + list(round_map.keys()))  
+                        if filter_round_name == "All":
+                            filter_round_id = None
+                        else:
+                            filter_round_id = round_map[filter_round_name]
                     else:
-                        filter_round_id = round_map[filter_round_name]
+                        st.info("No rounds available")
+                        filter_round_id = None
             with col4:
                 filter_status = st.selectbox("status", [ "pending", "in progress", "eligible", "ineligible"])
             apply_filter_button = st.button("🔍 Apply Filters", type="primary", use_container_width=True, key="apply_filters_forms")
             
             # Store filter parameters in session state when button is clicked
             if apply_filter_button:
+                if filter_event_id is None:
+                    st.error("Please select a valid event to filter.")
+                    st.stop()
+                    
                 if option == "yearly club championship":
                     query = supabase.table("request_competition_form").select("*") \
                         .eq("yearly_club_championship_id", filter_event_id)
@@ -1316,9 +1366,13 @@ if user_role == 'recorder':
                 if 'ranges_config' not in st.session_state.event_builder_data:
                     st.session_state.event_builder_data['ranges_config'] = {}
                 
-                # Get available ranges
+                # Get available ranges with target face information
                 ranges_response = supabase.table("range").select("*").execute()
+                target_faces_response = supabase.table("target_face").select("*").execute()
                 rounds_response = supabase.table("round").select("*").execute()
+                
+                # Create a mapping of target_face_id to target face details
+                target_faces_map = {tf['target_face_id']: tf for tf in target_faces_response.data} if target_faces_response.data else {}
                 
                 for round_id in st.session_state.event_builder_data['rounds']:
                     round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
@@ -1333,7 +1387,17 @@ if user_role == 'recorder':
                             for idx, range_config in enumerate(st.session_state.event_builder_data['ranges_config'][round_id]):
                                 col1, col2, col3 = st.columns([2, 2, 1])
                                 with col1:
-                                    st.write(f"Range ID: {range_config['range_id']}")
+                                    # Get range details to show target face info
+                                    range_details = next((r for r in ranges_response.data if r['range_id'] == range_config['range_id']), None)
+                                    if range_details and range_details.get('target_face_id'):
+                                        target_face = target_faces_map.get(range_details['target_face_id'])
+                                        if target_face:
+                                            st.write(f"Range {range_config['range_id']} ({range_details['distance']}{range_details['unit_of_length']}) ")
+                                            st.caption(f"Target Face Diameter: {target_face['diameter']}{target_face['unit_of_length']}")
+                                        else:
+                                            st.write(f"Range ID: {range_config['range_id']}")
+                                    else:
+                                        st.write(f"Range ID: {range_config['range_id']}")
                                 with col2:
                                     st.write(f"Number of Ends: {range_config['num_ends']}")
                                 with col3:
@@ -1345,8 +1409,16 @@ if user_role == 'recorder':
                         col1, col2, col3 = st.columns([2, 2, 1])
                         with col1:
                             if ranges_response.data:
-                                range_options = {f"Range {r['range_id']} ({r['distance']}{r['unit_of_length']})": r['range_id'] 
-                                               for r in ranges_response.data}
+                                # Build range options with target face information
+                                range_options = {}
+                                for r in ranges_response.data:
+                                    target_face = target_faces_map.get(r.get('target_face_id'))
+                                    if target_face:
+                                        range_label = f"Range {r['range_id']} ({r['distance']}{r['unit_of_length']}) - Target Face Diameter: {target_face['diameter']}{target_face['unit_of_length']}"
+                                    else:
+                                        range_label = f"Range {r['range_id']} ({r['distance']}{r['unit_of_length']})"
+                                    range_options[range_label] = r['range_id']
+                                
                                 selected_range = st.selectbox("Select Range", [""] + list(range_options.keys()), 
                                                             key=f"range_select_{round_id}")
                         with col2:

@@ -131,14 +131,14 @@ def join_club(archer_id, club_id, sender_word="I would like to join this club.")
             print(f"Club {club_id} is not open to join")
             return None
         
-        # Get archer's date of birth to calculate age
-        archer_response = supabase.table("archer").select("date_of_birth").eq("archer_id", archer_id).execute()
+        # Get archer's date of birth to calculate age from account table
+        account_response = supabase.table("account").select("date_of_birth").eq("account_id", archer_id).execute()
         
-        if not archer_response.data:
-            print(f"Archer {archer_id} not found")
+        if not account_response.data:
+            print(f"Archer account {archer_id} not found")
             return None
         
-        date_of_birth = archer_response.data[0].get('date_of_birth')
+        date_of_birth = account_response.data[0].get('date_of_birth')
         
         if date_of_birth:
             from datetime import datetime

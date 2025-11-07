@@ -41,11 +41,10 @@ with tab1:
     
     with st.expander("🔎 Search & Filter Clubs", expanded=True):
         # Search and filter inputs
-        search_query = st.text_input("🔍 Search clubs", placeholder="Enter club name...")
-        
-        col1, col2 = st.columns([2, 1])
-        
+        col1, col2 = st.columns([1,1])
         with col1:
+            search_query = st.text_input("🔍 Search clubs", placeholder="Enter club name...")
+        with col2:
             age_range = st.slider(
                 "Select age range for club eligibility",
                 min_value=5,
@@ -56,19 +55,9 @@ with tab1:
             )
             filter_min_age, filter_max_age = age_range
         
-        with col2:
-            apply_age_filter = st.checkbox("Apply Age Filter", value=False, help="Filter clubs by selected age range")
             
         if st.button("Search", type="primary"):
-            # Apply age filter only if checkbox is checked
-            if apply_age_filter:
-                clubs_df = get_all_clubs(
-                    search_query if search_query else None,
-                    filter_min_age,
-                    filter_max_age
-                )
-            else:
-                clubs_df = get_all_clubs(search_query if search_query else None)
+            clubs_df = get_all_clubs(search_query if search_query else None)
             st.session_state.clubs_df = clubs_df
     
     # Initial load - show all clubs without filters

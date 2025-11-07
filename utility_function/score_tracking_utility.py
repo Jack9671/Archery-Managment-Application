@@ -330,6 +330,34 @@ def get_club_competition_map():
     data = supabase.table("club_competition").select("club_competition_id, name").execute().data
     return {c["name"] : c["club_competition_id"] for c in data}
 
+def get_club_competition_map_of_a_recorder(recorder_id: str) -> dict:
+    """Get a mapping of club competition names to IDs that a recorder is recording for"""
+    try:
+        # Get all club competition IDs from recording table for this recorder
+        # Note: recording_id is the foreign key to the recorder's account_id
+        response = supabase.table("recording").select("club_competition_id")\
+            .eq("recording_id", recorder_id)\
+            .not_.is_("club_competition_id", "null")\
+            .execute()
+        
+        if not response.data:
+            return {}
+        
+        club_competition_ids = list(set([record['club_competition_id'] for record in response.data if record.get('club_competition_id')]))
+        
+        if not club_competition_ids:
+            return {}
+        
+        # Get club competition details
+        response = supabase.table("club_competition").select("club_competition_id, name")\
+            .in_("club_competition_id", club_competition_ids)\
+            .execute()
+        
+        return {comp['name']: comp['club_competition_id'] for comp in response.data} if response.data else {}
+    except Exception as e:
+        st.error(f"Error fetching recorder's club competition map: {str(e)}")
+        return {}
+
 def get_all_participant_id_of_a_club_competition(club_competition_id: str) -> list:
     """Get all participant IDs of a club competition from event_context and participating tables"""
     try:
