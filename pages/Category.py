@@ -263,7 +263,7 @@ if is_aaf_member:
                 submit = st.form_submit_button("Add Target Face", type="primary")
                 
                 if submit:
-                    result = add_target_face(int(diameter), unit_of_length)
+                    result = add_target_face(diameter, unit_of_length)
                     if result:
                         st.success(f"✅ Target face added successfully! ID: {result['target_face_id']}")
                         st.balloons()
@@ -308,7 +308,7 @@ if is_aaf_member:
                     
                     if submit:
                         try:
-                            result = add_range(int(distance), unit_of_length, target_face_id)
+                            result = add_range(distance, unit_of_length, target_face_id)
                             if result:
                                 st.success(f"✅ Range added successfully! ID: {result['range_id']}")
                                 st.balloons()

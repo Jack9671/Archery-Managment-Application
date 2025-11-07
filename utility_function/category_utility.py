@@ -1,6 +1,7 @@
+from turtle import st
 from utility_function.initilize_dbconnection import supabase
 import pandas as pd
-import datetime
+from datetime import datetime
 def get_all_equipment():
     """Get all equipment types"""
     try:
