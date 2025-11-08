@@ -1,4 +1,3 @@
-from turtle import st
 from utility_function.initilize_dbconnection import supabase
 import pandas as pd
 from datetime import datetime
