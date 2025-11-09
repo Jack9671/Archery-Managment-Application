@@ -460,7 +460,8 @@ with tab_enroll:
                         "sender_word": sender_word,
                         "status": "pending",
                         "reviewer_word": "waiting for reviewing",
-                        "reviewed_by": reviewer_id
+                        "reviewed_by": reviewer_id,
+                        "created_at": datetime.now().isoformat()
                     }).execute()
                     
                     if response.data:
