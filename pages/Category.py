@@ -316,27 +316,7 @@ if is_aaf_member:
                                 st.error("Failed to add range. Check the terminal/console for detailed error information.")
                         except Exception as e:
                             st.error(f"Failed to add range. Error: {str(e)}")
-        
-        elif add_option == "Round":
-            with st.form("add_round_form"):
-                st.subheader("➕ Add New Round")
-                
-                round_name = st.text_input("Round Name*", placeholder="e.g., Male U21 Longbow")
-                category_id = st.number_input("Category ID*", min_value=1, step=1, value=1,
-                    help="The category this round belongs to")
-                
-                submit = st.form_submit_button("Add Round", type="primary")
-                
-                if submit:
-                    if not round_name:
-                        st.error("Please enter a round name!")
-                    else:
-                        result = add_round(round_name, category_id)
-                        if result:
-                            st.success(f"✅ Round added successfully! ID: {result['round_id']}")
-                            st.balloons()
-                        else:
-                            st.error("Failed to add round.")
+    
         
         else:
             st.info("👆 Please select an option from the dropdown above.")
