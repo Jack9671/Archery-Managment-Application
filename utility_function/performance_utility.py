@@ -86,7 +86,7 @@ def _fetch_participating_base(club_competition_id=None, round_id=None, archer_ac
             "participating_id, archer_id, sum_score, "
             "score_1st_arrow,score_2nd_arrow,score_3rd_arrow,score_4th_arrow,score_5th_arrow,score_6th_arrow, "
             "event_context!inner(event_context_id,club_competition_id,round_id,range_id,end_order), "
-            "archer!inner(account!inner(fullname))"
+            "archer!inner(archer_id, account!inner(fullname))"
         ).eq("type","competition")
 
         if club_competition_id:
@@ -176,7 +176,7 @@ def fetch_yearly_normalized_average(yc_id=None, round_id=None, archer_account_id
             "participating_id, archer_id, sum_score, "
             "score_1st_arrow,score_2nd_arrow,score_3rd_arrow,score_4th_arrow,score_5th_arrow,score_6th_arrow, "
             "event_context!inner(club_competition_id,round_id), "
-            "archer!inner(account!inner(fullname))"
+            "archer!inner(archer_id, account!inner(fullname))"
         ).eq("type","competition").eq("event_context.round_id", round_id).in_("event_context.club_competition_id", comp_ids)
         if archer_account_id:
             query = query.eq("archer.account_id", archer_account_id)
