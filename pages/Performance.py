@@ -5,6 +5,9 @@ import plotly.express as px
 from utility_function.initilize_dbconnection import supabase
 from utility_function import performance_utility as perf
 
+# =========================
+# Access guard (consistent)
+# =========================
 if not st.session_state.get('logged_in', False):
     st.warning("Please log in to access this page.")
     st.stop()
@@ -12,17 +15,21 @@ if not st.session_state.get('logged_in', False):
 st.title("📈 Performance")
 st.caption("Browse personal, others’, and community performance — per End/Range/Round, rankings, and category percentiles.")
 
+# small helper for nice df display
 def _show_df(df: pd.DataFrame, use_index=False, height=380):
     if df is None or df.empty:
         st.info("No data to display.")
         return
     st.dataframe(df, use_container_width=True, height=height, hide_index=not use_index)
 
+# ========================================
+# TAB SETUP (consistent with other pages)
+# ========================================
 tab1, tab2 = st.tabs(["🔢 View Sum Score", "🏅 Ranking"])
 
-# =====================================
+# ========================================
 # TAB 1: View Sum Score
-# =====================================
+# ========================================
 with tab1:
     st.subheader("🔢 View Sum Score")
     mode = st.radio(
@@ -104,9 +111,9 @@ with tab1:
                 except Exception as e:
                     st.warning(f"Could not render bar chart: {e}")
 
-# =====================================
+# ========================================
 # TAB 2: Ranking
-# =====================================
+# ========================================
 with tab2:
     st.subheader("🏅 Ranking")
     opt = st.radio(
@@ -133,7 +140,6 @@ with tab2:
 
             df = perf.fetch_ranking_in_round(club_competition_id=club_id, round_id=rnd_id)
             _show_df(df)
-
             if df is not None and not df.empty:
                 try:
                     fig = px.bar(
@@ -163,7 +169,6 @@ with tab2:
 
             df = perf.fetch_ranking_yearly_same_round(yc_id=yc_id, round_id=rnd_id)
             _show_df(df)
-
             if df is not None and not df.empty:
                 try:
                     fig = px.bar(
@@ -179,9 +184,9 @@ with tab2:
                     st.warning(f"Could not render bar chart: {e}")
 
     else:
-        # =====================================
+        # ==============================
         # UPDATED GLOBAL PERCENTILE VIEW
-        # =====================================
+        # ==============================
         st.subheader("📈 View Global Rating Percentile per Category")
 
         archer_map = perf.get_archers()
@@ -270,6 +275,6 @@ with tab2:
                     elif selected_percentile >= 45:
                         st.info(f"👌 {selected_archer} is performing **around the average range** for Category {selected_category}.")
                     else:
-                        st.info(f"📉 {selected_archer} is performing **below average** for Category {selected_category}. Keep practicing!")
+                        st.info(f"📈 {selected_archer} is below average but has room to grow in Category {selected_category} — keep practicing!")
                 else:
                     st.warning("Unable to estimate percentile for the selected archer.")
