@@ -461,12 +461,8 @@ with tab_enroll:
                         "status": "pending",
                         "reviewer_word": "waiting for reviewing",
                         "reviewed_by": reviewer_id,
-<<<<<<< HEAD
                         "created_at": datetime.now().isoformat(),
                         "updated_at": datetime.now().isoformat()
-=======
-                        "created_at": datetime.now().isoformat()
->>>>>>> a1925b2 (update)
                     }).execute()
                     
                     if response.data:
@@ -894,19 +890,19 @@ if user_role == 'recorder':
                             if filter_type == "participating":
                                 for row in newly_eligible_rows:
                                     event_utility.add_participant_to_participating_table(
-                                        user_id=row['sender_id'],
+                                        user_id=int(row['sender_id']),
                                         event_type=option, 
-                                        event_id=row['yearly_club_championship_id'] if option == "yearly club championship" else row['club_competition_id'],
-                                        round_id=row['round_id']
+                                        event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id']),
+                                        round_id=int(row['round_id'])
                                     )
                                 st.success(f"✅ {len(newly_eligible_rows)} participant(s) added successfully.")
                             
                             elif filter_type == "recording":
                                 for row in newly_eligible_rows:
                                     event_utility.add_recorder_to_recording_table(
-                                        user_id=row['sender_id'],
+                                        user_id=int(row['sender_id']),
                                         event_type=option, 
-                                        event_id=row['yearly_club_championship_id'] if option == "yearly club championship" else row['club_competition_id']
+                                        event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id'])
                                     )
                                 st.success(f"✅ {len(newly_eligible_rows)} recorder(s) added successfully.")
                         
@@ -1532,4 +1528,4 @@ if user_role == 'recorder':
                                 # Show technical details in expander
                                 with st.expander("🔍 Technical Details"):
                                     st.code(error_msg)
-        
+
