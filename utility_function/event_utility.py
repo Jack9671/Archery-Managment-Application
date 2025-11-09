@@ -1184,12 +1184,12 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
         #step 1: get all rows from event_context table where yearly_club_championship_id = event_id and round_id = round_id transform to a dataframe
         event_context_response = supabase.table("event_context").select("*").eq("yearly_club_championship_id", event_id).eq("round_id", round_id).execute()
         event_context_df = pd.DataFrame(event_context_response.data) 
-        #for each row in event_context_df, insert a row into participating table with user_id and event_context_id with type = "championship". Does the same with type "practice"
+        #for each row in event_context_df, insert a row into participating table with user_id and event_context_id with type = "competition". Does the same with type "practice"
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
                 "event_context_id": int(row["event_context_id"]),
-                "type": "championship",
+                "type": "competition",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
             }).execute()
