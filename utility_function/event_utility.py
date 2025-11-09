@@ -298,8 +298,9 @@ def create_complete_event(creator_id, event_data):
             - date_end: End date (for competition)
             - eligible_group_id: Optional eligible group ID
             - competitions: List of competitions (for championship)
-            - rounds: List of round IDs
-            - ranges_config: Dict mapping round_id to list of {range_id, num_ends}
+            - rounds: List of round info dicts with {name, category_id}
+            - ranges_config: Dict mapping round_key (e.g., "round_0") to list of {range_id, num_ends}
+            - round_schedules: Dict mapping round_key to schedule info
     
     Returns:
         Dict with success status and created IDs, or error message
@@ -308,12 +309,48 @@ def create_complete_event(creator_id, event_data):
         created_ids = {
             'championship_id': None,
             'competition_ids': [],
-            'event_context_ids': []
+            'event_context_ids': [],
+            'round_ids': []
         }
         
         event_type = event_data.get('event_type')
         
-        # STEP 1: Create Championship or Competition
+        # STEP 1: Create rounds in the database first
+        rounds_info = event_data.get('rounds', [])
+        round_id_mapping = {}  # Maps round_key (e.g., "round_0") to actual round_id
+        
+        for idx, round_info in enumerate(rounds_info):
+            round_key = f"round_{idx}"
+            
+            # Create round in database
+            round_response = supabase.table("round").insert({
+                "name": round_info['name'],
+                "category_id": round_info['category_id'],
+                "created_at": datetime.now().isoformat()
+            }).execute()
+            
+            if not round_response.data:
+                return {"success": False, "error": f"Failed to create round: {round_info['name']}"}
+            
+            round_id = round_response.data[0]['round_id']
+            round_id_mapping[round_key] = round_id
+            created_ids['round_ids'].append(round_id)
+        
+        # Get actual round IDs list
+        actual_round_ids = list(round_id_mapping.values())
+        
+        # STEP 2: Remap ranges_config and round_schedules to use actual round IDs
+        remapped_ranges_config = {}
+        for round_key, range_configs in event_data.get('ranges_config', {}).items():
+            if round_key in round_id_mapping:
+                remapped_ranges_config[round_id_mapping[round_key]] = range_configs
+        
+        remapped_round_schedules = {}
+        for round_key, schedule_info in event_data.get('round_schedules', {}).items():
+            if round_key in round_id_mapping:
+                remapped_round_schedules[round_id_mapping[round_key]] = schedule_info
+        
+        # STEP 3: Create Championship or Competition
         if event_type == "Yearly Club Championship":
             # Create yearly championship
             championship_response = supabase.table("yearly_club_championship").insert({
@@ -352,21 +389,33 @@ def create_complete_event(creator_id, event_data):
                 comp_id = comp_response.data[0]['club_competition_id']
                 created_ids['competition_ids'].append(comp_id)
                 
-                # Create event_context records for this competition
+                # Create event_context records for this competition using actual round IDs
                 context_ids = _create_event_contexts(championship_id, comp_id, 
-                                                     event_data['rounds'], 
-                                                     event_data['ranges_config'])
+                                                     actual_round_ids, 
+                                                     remapped_ranges_config)
                 
                 if context_ids is None:
                     return {"success": False, "error": f"Failed to create event contexts for competition: {comp['name']}"}
                 
                 created_ids['event_context_ids'].extend(context_ids)
                 
-                # Create round_schedule entries for this competition
-                schedule_success = _create_round_schedules(comp_id, event_data['rounds'], 
-                                                          event_data.get('round_schedules', {}))
+                # Create round_schedule entries for this competition using actual round IDs
+                schedule_success = _create_round_schedules(comp_id, actual_round_ids, 
+                                                          remapped_round_schedules)
                 if not schedule_success:
                     return {"success": False, "error": f"Failed to create round schedules for competition: {comp['name']}"}
+                
+                # Add creator recorder to recording table for this competition
+                # Rule: recorders record in all club competitions linked with a yearly club championship
+                recording_response = supabase.table("recording").insert({
+                    "recording_id": creator_id,
+                    "yearly_club_championship_id": championship_id,
+                    "club_competition_id": comp_id,
+                    "created_at": datetime.now().isoformat()
+                }).execute()
+                
+                if not recording_response.data:
+                    return {"success": False, "error": f"Failed to add creator to recording table for competition: {comp['name']}"}
         
         else:  # Club Competition
             # Create standalone club competition
@@ -387,21 +436,32 @@ def create_complete_event(creator_id, event_data):
             comp_id = comp_response.data[0]['club_competition_id']
             created_ids['competition_ids'].append(comp_id)
             
-            # Create event_context records for this competition
+            # Create event_context records for this competition using actual round IDs
             context_ids = _create_event_contexts(None, comp_id, 
-                                                 event_data['rounds'], 
-                                                 event_data['ranges_config'])
+                                                 actual_round_ids, 
+                                                 remapped_ranges_config)
             
             if context_ids is None:
                 return {"success": False, "error": "Failed to create event contexts"}
             
             created_ids['event_context_ids'].extend(context_ids)
             
-            # Create round_schedule entries for this competition
-            schedule_success = _create_round_schedules(comp_id, event_data['rounds'], 
-                                                      event_data.get('round_schedules', {}))
+            # Create round_schedule entries for this competition using actual round IDs
+            schedule_success = _create_round_schedules(comp_id, actual_round_ids, 
+                                                      remapped_round_schedules)
             if not schedule_success:
                 return {"success": False, "error": "Failed to create round schedules"}
+            
+            # Add creator recorder to recording table for this standalone competition
+            recording_response = supabase.table("recording").insert({
+                "recording_id": creator_id,
+                "yearly_club_championship_id": None,  # NULL because standalone competition
+                "club_competition_id": comp_id,
+                "created_at": datetime.now().isoformat()
+            }).execute()
+            
+            if not recording_response.data:
+                return {"success": False, "error": "Failed to add creator to recording table"}
         
         return {
             "success": True,
@@ -887,7 +947,7 @@ def get_event_hierarchy_for_icicle(event_type, event_id):
                 round_ids = list(set([ec['round_id'] for ec in comp_contexts if ec.get('round_id')]))
                 
                 if round_ids:
-                    rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id)").in_("round_id", round_ids).execute()
+                    rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id, discipline(name), age_division(min_age, max_age), equipment(name))").in_("round_id", round_ids).execute()
                     
                     for round_data in rounds.data:
                         round_id = round_data['round_id']
@@ -901,9 +961,25 @@ def get_event_hierarchy_for_icicle(event_type, event_id):
                         round_hover += f"Category ID: {round_data.get('category_id', 'N/A')}<br>"
                         if round_data.get('category'):
                             cat = round_data['category']
-                            round_hover += f"Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
-                            round_hover += f"Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
-                            round_hover += f"Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
+                            round_hover += f"<b>Category Details:</b><br>"
+                            # Discipline
+                            if cat.get('discipline') and cat['discipline'].get('name'):
+                                round_hover += f"  • Discipline: {cat['discipline']['name']}<br>"
+                            else:
+                                round_hover += f"  • Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
+                            # Age Division
+                            if cat.get('age_division'):
+                                age_div = cat['age_division']
+                                min_age = age_div.get('min_age', 'N/A')
+                                max_age = age_div.get('max_age', 'N/A')
+                                round_hover += f"  • Age Division: {min_age}-{max_age} years<br>"
+                            else:
+                                round_hover += f"  • Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
+                            # Equipment
+                            if cat.get('equipment') and cat['equipment'].get('name'):
+                                round_hover += f"  • Equipment: {cat['equipment']['name']}<br>"
+                            else:
+                                round_hover += f"  • Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
                         round_hover += f"Created: {round_data.get('created_at', 'N/A')[:10] if round_data.get('created_at') else 'N/A'}"
                         
                         hierarchy_rows.append({
@@ -958,7 +1034,7 @@ def get_event_hierarchy_for_icicle(event_type, event_id):
             round_ids = list(set([ec['round_id'] for ec in event_contexts.data if ec.get('round_id')]))
             
             if round_ids:
-                rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id)").in_("round_id", round_ids).execute()
+                rounds = supabase.table("round").select("*, category(discipline_id, age_division_id, equipment_id, discipline(name), age_division(min_age, max_age), equipment(name))").in_("round_id", round_ids).execute()
                 
                 for round_data in rounds.data:
                     round_id = round_data['round_id']
@@ -972,9 +1048,25 @@ def get_event_hierarchy_for_icicle(event_type, event_id):
                     round_hover += f"Category ID: {round_data.get('category_id', 'N/A')}<br>"
                     if round_data.get('category'):
                         cat = round_data['category']
-                        round_hover += f"Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
-                        round_hover += f"Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
-                        round_hover += f"Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
+                        round_hover += f"<b>Category Details:</b><br>"
+                        # Discipline
+                        if cat.get('discipline') and cat['discipline'].get('name'):
+                            round_hover += f"  • Discipline: {cat['discipline']['name']}<br>"
+                        else:
+                            round_hover += f"  • Discipline ID: {cat.get('discipline_id', 'N/A')}<br>"
+                        # Age Division
+                        if cat.get('age_division'):
+                            age_div = cat['age_division']
+                            min_age = age_div.get('min_age', 'N/A')
+                            max_age = age_div.get('max_age', 'N/A')
+                            round_hover += f"  • Age Division: {min_age}-{max_age} years<br>"
+                        else:
+                            round_hover += f"  • Age Division ID: {cat.get('age_division_id', 'N/A')}<br>"
+                        # Equipment
+                        if cat.get('equipment') and cat['equipment'].get('name'):
+                            round_hover += f"  • Equipment: {cat['equipment']['name']}<br>"
+                        else:
+                            round_hover += f"  • Equipment ID: {cat.get('equipment_id', 'N/A')}<br>"
                     round_hover += f"Created: {round_data.get('created_at', 'N/A')[:10] if round_data.get('created_at') else 'N/A'}"
                     
                     hierarchy_rows.append({
@@ -1207,7 +1299,8 @@ def add_recorder_to_recording_table(user_id: str, event_type: str, event_id:str)
         #insert a row into recording table with user_id and club_competition_id = event_id
         supabase.table("recording").insert({
             "recording_id": user_id,
-            "club_competition_id": event_id
+            "club_competition_id": event_id,
+            "created_at": datetime.now().isoformat()    
         }).execute()
     elif event_type == 'yearly club championship':
         #get all club_competition_id from event_context table where yearly_club_championship_id = event_id
@@ -1222,6 +1315,53 @@ def add_recorder_to_recording_table(user_id: str, event_type: str, event_id:str)
                 "club_competition_id": row["club_competition_id"],
                 "created_at": datetime.now().isoformat()
             }).execute()
+
+def remove_participant_from_participating_table(user_id: str, event_type: str, event_id: str, round_id: str) -> None:
+    if event_type == 'club competition':
+        # Get all event_context records for this competition and round
+        event_context_response = supabase.table("event_context").select("*").eq("club_competition_id", event_id).eq("round_id", round_id).execute()
+        event_context_df = pd.DataFrame(event_context_response.data)
+        
+        # Delete all participating records for this user across all event contexts
+        for _, row in event_context_df.iterrows():
+            supabase.table("participating").delete()\
+                .eq("participating_id", user_id)\
+                .eq("event_context_id", int(row["event_context_id"]))\
+                .execute()
+    
+    elif event_type == 'yearly club championship':
+        # Get all event_context records for this championship and round
+        event_context_response = supabase.table("event_context").select("*").eq("yearly_club_championship_id", event_id).eq("round_id", round_id).execute()
+        event_context_df = pd.DataFrame(event_context_response.data)
+        
+        # Delete all participating records for this user across all event contexts
+        for _, row in event_context_df.iterrows():
+            supabase.table("participating").delete()\
+                .eq("participating_id", user_id)\
+                .eq("event_context_id", int(row["event_context_id"]))\
+                .execute()
+
+def remove_recorder_from_recording_table(user_id: str, event_type: str, event_id: str) -> None:
+    if event_type == 'club competition':
+        # Delete recording record for this competition
+        supabase.table("recording").delete()\
+            .eq("recording_id", user_id)\
+            .eq("club_competition_id", event_id)\
+            .execute()
+    
+    elif event_type == 'yearly club championship':
+        # Get all club_competition_id from event_context table for this championship
+        event_context_response = supabase.table("event_context").select("club_competition_id")\
+            .eq("yearly_club_championship_id", event_id)\
+            .execute()
+        
+        # Delete recording records for all associated competitions
+        for row in event_context_response.data:
+            supabase.table("recording").delete()\
+                .eq("recording_id", user_id)\
+                .eq("yearly_club_championship_id", event_id)\
+                .eq("club_competition_id", row["club_competition_id"])\
+                .execute()
 
 def get_all_yearly_championship_ids_of_a_recorder(user_id: str) -> list:
     '''there are two tables to collect yearly club championship ids of a recorder: yearly_club_championship and recording

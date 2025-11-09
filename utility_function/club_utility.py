@@ -166,7 +166,10 @@ def join_club(archer_id, club_id, sender_word="I would like to join this club.")
             "sender_word": sender_word,
             "club_id": club_id,
             "status": "pending",
-            "club_creator_word": ""
+            "club_creator_word": "",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+
         }).execute()
         
         if response.data:

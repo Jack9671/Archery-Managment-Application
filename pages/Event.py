@@ -749,7 +749,9 @@ if user_role == 'recorder':
             # Filter options
             #yearly_club_championship or club_competition
             option = st.radio("View Forms For", ["yearly club championship", "club competition"], horizontal=True)  
-            col1, col2, col3, col4 = st.columns(4)
+            
+            # Row 1: Event and Type
+            col1, col2 = st.columns(2)
             with col1: 
                 if option == "yearly club championship":
                     yearly_championship_map = event_utility.get_yearly_club_championship_map_of_a_recorder(user_id=st.session_state.user_id)
@@ -781,7 +783,9 @@ if user_role == 'recorder':
                     round_map = event_utility.get_round_map_of_an_event(event_type=option, event_id=filter_event_id)
                 else:
                     round_map = {}
-                    
+            
+            # Row 2: Round and Status
+            col3, col4 = st.columns(2)
             with col3:
                 if filter_type == "recording":
                     filter_round_id = None
@@ -797,7 +801,14 @@ if user_role == 'recorder':
                         filter_round_id = None
             with col4:
                 filter_status = st.selectbox("status", [ "pending", "in progress", "eligible", "ineligible"])
-            apply_filter_button = st.button("🔍 Apply Filters", type="primary", use_container_width=True, key="apply_filters_forms")
+            
+            # Row 3: Action and Apply Button
+            col5, col6 = st.columns(2)
+            with col5:
+                filter_action = st.selectbox("action", ["All", "enrol", "withdraw"])
+            with col6:
+                st.write("")  # Add spacing to align with the selectbox
+                apply_filter_button = st.button("🔍 Apply Filters", type="primary", use_container_width=True, key="apply_filters_forms")
             
             # Store filter parameters in session state when button is clicked
             if apply_filter_button:
@@ -810,13 +821,19 @@ if user_role == 'recorder':
                         .eq("yearly_club_championship_id", filter_event_id)
                     if filter_round_id is not None:
                         query = query.eq("round_id", filter_round_id)
-                    response = query.eq("type", filter_type).eq("status", filter_status).execute()
+                    query = query.eq("type", filter_type).eq("status", filter_status)
+                    if filter_action != "All":
+                        query = query.eq("action", filter_action)
+                    response = query.execute()
                 else:
                     query = supabase.table("request_competition_form").select("*") \
                         .eq("club_competition_id", filter_event_id)
                     if filter_round_id is not None:
                         query = query.eq("round_id", filter_round_id)
-                    response = query.eq("type", filter_type).eq("status", filter_status).execute()
+                    query = query.eq("type", filter_type).eq("status", filter_status)
+                    if filter_action != "All":
+                        query = query.eq("action", filter_action)
+                    response = query.execute()
                 
                 forms_data = response.data
                 
@@ -885,26 +902,53 @@ if user_role == 'recorder':
                         
                         st.success("✅ Changes saved successfully!")
                         
-                        # Add participants/recorders for newly eligible forms
+                        # Add/Remove participants/recorders for newly eligible forms based on action type
                         if newly_eligible_rows:
                             if filter_type == "participating":
                                 for row in newly_eligible_rows:
-                                    event_utility.add_participant_to_participating_table(
-                                        user_id=int(row['sender_id']),
-                                        event_type=option, 
-                                        event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id']),
-                                        round_id=int(row['round_id'])
-                                    )
-                                st.success(f"✅ {len(newly_eligible_rows)} participant(s) added successfully.")
+                                    if row['action'] == 'enrol':
+                                        event_utility.add_participant_to_participating_table(
+                                            user_id=int(row['sender_id']),
+                                            event_type=option, 
+                                            event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id']),
+                                            round_id=int(row['round_id'])
+                                        )
+                                    elif row['action'] == 'withdraw':
+                                        event_utility.remove_participant_from_participating_table(
+                                            user_id=int(row['sender_id']),
+                                            event_type=option, 
+                                            event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id']),
+                                            round_id=int(row['round_id'])
+                                        )
+                                
+                                enrollments = sum(1 for row in newly_eligible_rows if row['action'] == 'enrol')
+                                withdrawals = sum(1 for row in newly_eligible_rows if row['action'] == 'withdraw')
+                                if enrollments > 0:
+                                    st.success(f"✅ {enrollments} participant(s) added successfully.")
+                                if withdrawals > 0:
+                                    st.success(f"✅ {withdrawals} participant(s) removed successfully.")
                             
                             elif filter_type == "recording":
                                 for row in newly_eligible_rows:
-                                    event_utility.add_recorder_to_recording_table(
-                                        user_id=int(row['sender_id']),
-                                        event_type=option, 
-                                        event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id'])
-                                    )
-                                st.success(f"✅ {len(newly_eligible_rows)} recorder(s) added successfully.")
+                                    if row['action'] == 'enrol':
+                                        event_utility.add_recorder_to_recording_table(
+                                            user_id=int(row['sender_id']),
+                                            event_type=option, 
+                                            event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id'])
+                                        )
+                                    elif row['action'] == 'withdraw':
+                                        event_utility.remove_recorder_from_recording_table(
+                                            user_id=int(row['sender_id']),
+                                            event_type=option, 
+                                            event_id=int(row['yearly_club_championship_id']) if option == "yearly club championship" else int(row['club_competition_id'])
+                                        )
+                                
+                                enrollments = sum(1 for row in newly_eligible_rows if row['action'] == 'enrol')
+                                withdrawals = sum(1 for row in newly_eligible_rows if row['action'] == 'withdraw')
+                                if enrollments > 0:
+                                    st.success(f"✅ {enrollments} recorder(s) added successfully.")
+                                if withdrawals > 0:
+                                    st.success(f"✅ {withdrawals} recorder(s) removed successfully.")
                         
                         # Clear the session state to force refresh
                         del st.session_state['review_forms_data']
@@ -1241,41 +1285,54 @@ if user_role == 'recorder':
             # STEP 4: Add Rounds
             elif current_step == 4:
                 st.write("**Add Rounds**")
-                st.info("ℹ️ Select existing rounds from the database")
+                st.info("ℹ️ Create custom rounds by entering a name and selecting a category")
                 
-                # Get available rounds
-                rounds_response = supabase.table("round").select("round_id, name, category_id").execute()
-                
+                # Initialize rounds list - now storing round details instead of IDs
                 if 'rounds' not in st.session_state.event_builder_data:
                     st.session_state.event_builder_data['rounds'] = []
                 
+                # Get categories for selection
+                category_map = event_utility.get_category_map()
+                
                 # Display added rounds
                 if st.session_state.event_builder_data['rounds']:
-                    st.write(f"**Selected Rounds ({len(st.session_state.event_builder_data['rounds'])}):**")
-                    for idx, round_id in enumerate(st.session_state.event_builder_data['rounds']):
-                        round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
-                        if round_info:
-                            col1, col2 = st.columns([4, 1])
-                            with col1:
-                                st.write(f"{idx + 1}. {round_info['name']} ")
-                            with col2:
-                                if st.button("🗑️", key=f"del_round_{idx}"):
-                                    st.session_state.event_builder_data['rounds'].pop(idx)
-                                    st.rerun()
+                    st.write(f"**Created Rounds ({len(st.session_state.event_builder_data['rounds'])}):**")
+                    for idx, round_info in enumerate(st.session_state.event_builder_data['rounds']):
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            # Find category name from ID
+                            category_name = next((name for name, cat_id in category_map.items() if cat_id == round_info['category_id']), "Unknown Category")
+                            st.write(f"{idx + 1}. **{round_info['name']}** - {category_name}")
+                        with col2:
+                            if st.button("🗑️", key=f"del_round_{idx}"):
+                                st.session_state.event_builder_data['rounds'].pop(idx)
+                                st.rerun()
                 
-                # Add round selector
-                if rounds_response.data:
-                    round_options = {f"{r['name']}": r['round_id'] for r in rounds_response.data}
-                    selected_round = st.selectbox("Select Round to Add", [""] + list(round_options.keys()))
-                    
-                    if st.button("➕ Add Round", key="add_round") and selected_round:
-                        round_id = round_options[selected_round]
-                        if round_id not in st.session_state.event_builder_data['rounds']:
-                            st.session_state.event_builder_data['rounds'].append(round_id)
-                            st.success(f"Added {selected_round}")
-                            st.rerun()
+                # Add new round form
+                st.divider()
+                st.write("**Create New Round:**")
+                
+                col1, col2 = st.columns([2, 2])
+                with col1:
+                    round_name = st.text_input("Round Name*", placeholder="e.g., WA 720, FITA Outdoor", key="new_round_name")
+                with col2:
+                    category_name = st.selectbox("Category*", [""] + list(category_map.keys()), key="new_round_category")
+                
+                if st.button("➕ Add Round", key="add_round", type="secondary"):
+                    if not round_name or not category_name:
+                        st.error("Please provide both round name and category!")
+                    else:
+                        # Check if round with same name already exists
+                        if any(r['name'] == round_name for r in st.session_state.event_builder_data['rounds']):
+                            st.warning(f"A round with the name '{round_name}' has already been added!")
                         else:
-                            st.warning("Round already added!")
+                            category_id = category_map[category_name]
+                            st.session_state.event_builder_data['rounds'].append({
+                                'name': round_name,
+                                'category_id': category_id
+                            })
+                            st.success(f"Added round: {round_name}")
+                            st.rerun()
                 
                 col1, col2 = st.columns([1, 1])
                 with col1:
@@ -1299,44 +1356,41 @@ if user_role == 'recorder':
                 if 'round_schedules' not in st.session_state.event_builder_data:
                     st.session_state.event_builder_data['round_schedules'] = {}
                 
-                # Get round info
-                rounds_response = supabase.table("round").select("*").execute()
-                
-                for round_id in st.session_state.event_builder_data['rounds']:
-                    round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
-                    round_name = round_info['name'] if round_info else f"Round {round_id}"
+                for idx, round_info in enumerate(st.session_state.event_builder_data['rounds']):
+                    round_name = round_info['name']
+                    round_key = f"round_{idx}"  # Use index as key since we don't have IDs yet
                     
                     with st.expander(f"📅 {round_name}", expanded=True):
                         col1, col2 = st.columns(2)
                         
-                        current_schedule = st.session_state.event_builder_data['round_schedules'].get(round_id, {})
+                        current_schedule = st.session_state.event_builder_data['round_schedules'].get(round_key, {})
                         
                         with col1:
                             start_date = st.date_input(
                                 "Start Date*",
                                 value=current_schedule.get('start_date', date.today()),
-                                key=f"round_start_date_{round_id}"
+                                key=f"round_start_date_{idx}"
                             )
                             start_time = st.time_input(
                                 "Start Time*",
                                 value=current_schedule.get('start_time', datetime.now().time()),
-                                key=f"round_start_time_{round_id}"
+                                key=f"round_start_time_{idx}"
                             )
                         
                         with col2:
                             end_date = st.date_input(
                                 "Expected End Date*",
                                 value=current_schedule.get('end_date', date.today()),
-                                key=f"round_end_date_{round_id}"
+                                key=f"round_end_date_{idx}"
                             )
                             end_time = st.time_input(
                                 "Expected End Time*",
                                 value=current_schedule.get('end_time', datetime.now().time()),
-                                key=f"round_end_time_{round_id}"
+                                key=f"round_end_time_{idx}"
                             )
                         
                         # Store the schedule
-                        st.session_state.event_builder_data['round_schedules'][round_id] = {
+                        st.session_state.event_builder_data['round_schedules'][round_key] = {
                             'start_date': start_date,
                             'start_time': start_time,
                             'end_date': end_date,
@@ -1351,8 +1405,8 @@ if user_role == 'recorder':
                 with col2:
                     if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step5"):
                         # Validate all rounds have schedules
-                        all_scheduled = all(round_id in st.session_state.event_builder_data['round_schedules'] 
-                                          for round_id in st.session_state.event_builder_data['rounds'])
+                        all_scheduled = all(f"round_{idx}" in st.session_state.event_builder_data['round_schedules'] 
+                                          for idx in range(len(st.session_state.event_builder_data['rounds'])))
                         if not all_scheduled:
                             st.error("Please set schedule for all rounds!")
                         else:
@@ -1371,22 +1425,21 @@ if user_role == 'recorder':
                 # Get available ranges with target face information
                 ranges_response = supabase.table("range").select("*").execute()
                 target_faces_response = supabase.table("target_face").select("*").execute()
-                rounds_response = supabase.table("round").select("*").execute()
                 
                 # Create a mapping of target_face_id to target face details
                 target_faces_map = {tf['target_face_id']: tf for tf in target_faces_response.data} if target_faces_response.data else {}
                 
-                for round_id in st.session_state.event_builder_data['rounds']:
-                    round_info = next((r for r in rounds_response.data if r['round_id'] == round_id), None)
-                    round_name = round_info['name'] if round_info else f"Round {round_id}"
+                for idx, round_info in enumerate(st.session_state.event_builder_data['rounds']):
+                    round_name = round_info['name']
+                    round_key = f"round_{idx}"
                     
                     with st.expander(f"🎯 {round_name}", expanded=True):
-                        if round_id not in st.session_state.event_builder_data['ranges_config']:
-                            st.session_state.event_builder_data['ranges_config'][round_id] = []
+                        if round_key not in st.session_state.event_builder_data['ranges_config']:
+                            st.session_state.event_builder_data['ranges_config'][round_key] = []
                         
                         # Display configured ranges
-                        if st.session_state.event_builder_data['ranges_config'][round_id]:
-                            for idx, range_config in enumerate(st.session_state.event_builder_data['ranges_config'][round_id]):
+                        if st.session_state.event_builder_data['ranges_config'][round_key]:
+                            for range_idx, range_config in enumerate(st.session_state.event_builder_data['ranges_config'][round_key]):
                                 col1, col2, col3 = st.columns([2, 2, 1])
                                 with col1:
                                     # Get range details to show target face info
@@ -1403,8 +1456,8 @@ if user_role == 'recorder':
                                 with col2:
                                     st.write(f"Number of Ends: {range_config['num_ends']}")
                                 with col3:
-                                    if st.button("🗑️", key=f"del_range_{round_id}_{idx}"):
-                                        st.session_state.event_builder_data['ranges_config'][round_id].pop(idx)
+                                    if st.button("🗑️", key=f"del_range_{idx}_{range_idx}"):
+                                        st.session_state.event_builder_data['ranges_config'][round_key].pop(range_idx)
                                         st.rerun()
                         
                         # Add new range
@@ -1422,16 +1475,16 @@ if user_role == 'recorder':
                                     range_options[range_label] = r['range_id']
                                 
                                 selected_range = st.selectbox("Select Range", [""] + list(range_options.keys()), 
-                                                            key=f"range_select_{round_id}")
+                                                            key=f"range_select_{idx}")
                         with col2:
                             num_ends = st.number_input("Number of Ends*", min_value=1, max_value=20, value=6,
-                                                      key=f"num_ends_{round_id}")
+                                                      key=f"num_ends_{idx}")
                         with col3:
                             st.write("")
                             st.write("")
-                            if st.button("➕", key=f"add_range_{round_id}") and selected_range:
+                            if st.button("➕", key=f"add_range_{idx}") and selected_range:
                                 range_id = range_options[selected_range]
-                                st.session_state.event_builder_data['ranges_config'][round_id].append({
+                                st.session_state.event_builder_data['ranges_config'][round_key].append({
                                     'range_id': range_id,
                                     'num_ends': num_ends
                                 })
@@ -1445,8 +1498,8 @@ if user_role == 'recorder':
                 with col2:
                     if st.button("Next ➡️", type="primary", use_container_width=True, key="next_step6"):
                         # Validate all rounds have ranges configured
-                        all_configured = all(st.session_state.event_builder_data['ranges_config'].get(r_id, []) 
-                                           for r_id in st.session_state.event_builder_data['rounds'])
+                        all_configured = all(st.session_state.event_builder_data['ranges_config'].get(f"round_{idx}", []) 
+                                           for idx in range(len(st.session_state.event_builder_data['rounds'])))
                         if not all_configured:
                             st.error("Please configure ranges for all rounds!")
                         else:
