@@ -38,6 +38,10 @@ def get_rounds():
         return {}
 
 def get_categories():
+    """
+    Schema does not expose a category 'name', so we expose IDs as labels.
+    You can replace this to join discipline/equipment/age_division for a richer label later.
+    """
     try:
         res = supabase.table("category").select("category_id").execute()
         return _safe_dict(res.data or [], "category_id", "category_id")
@@ -66,35 +70,46 @@ def _compute_sum_score(row):
     return row.get("sum_score", 0)
 
 def _participant_label(rec):
+    """Return a display label for the archer: 'fullname (participating_id)'."""
     name = None
-    if isinstance(rec.get("archer"), dict):
-        archer = rec.get("archer")
-        if isinstance(archer.get("account"), dict):
-            name = archer["account"].get("fullname")
+    archer = rec.get("archer")
+    if isinstance(archer, dict):
+        account = archer.get("account")
+        if isinstance(account, dict):
+            name = account.get("fullname")
     name = name or rec.get("fullname") or "Unknown"
     pid = rec.get("participating_id")
     return f"{name} ({pid})" if pid else name
 
 # ========================
-# Fetchers
+# Core fetcher
 # ========================
 
-def _fetch_participating_base(club_competition_id=None, round_id=None, archer_account_id=None):
-    """Base fetcher: participating + event_context + archer→account join."""
+def _fetch_participating_base(club_competition_id=None, round_id=None, archer_account_id=None, yearly_championship_id=None):
+    """
+    Base fetcher: participating + event_context + archer→account join.
+    Joins are implicit based on FKs:
+        participating.participating_id → archer.archer_id → account.account_id
+    """
     try:
-        query = supabase.table("participating").select(
-            "participating_id, archer_id, sum_score, "
-            "score_1st_arrow,score_2nd_arrow,score_3rd_arrow,score_4th_arrow,score_5th_arrow,score_6th_arrow, "
-            "event_context!inner(event_context_id,club_competition_id,round_id,range_id,end_order), "
-            "archer!inner(archer_id, account!inner(fullname))"
-        ).eq("type","competition")
+        select_cols = (
+            "participating_id, sum_score, "
+            "score_1st_arrow,score_2nd_arrow,score_3rd_arrow,"
+            "score_4th_arrow,score_5th_arrow,score_6th_arrow, "
+            "event_context!inner(event_context_id,yearly_club_championship_id,club_competition_id,round_id,range_id,end_order), "
+            "archer!inner(account!inner(fullname))"
+        )
+        query = supabase.table("participating").select(select_cols).eq("type","competition")
 
         if club_competition_id:
             query = query.eq("event_context.club_competition_id", club_competition_id)
+        if yearly_championship_id:
+            query = query.eq("event_context.yearly_club_championship_id", yearly_championship_id)
         if round_id:
             query = query.eq("event_context.round_id", round_id)
         if archer_account_id:
-            query = query.eq("archer.account_id", archer_account_id)
+            # nested filter through archer → account
+            query = query.eq("archer.account.account_id", archer_account_id)
 
         res = query.execute()
         return res.data or []
@@ -110,10 +125,11 @@ def fetch_scores_per_end(club_competition_id=None, round_id=None, archer_account
     if not rows: return pd.DataFrame()
     out = []
     for r in rows:
-        label = _participant_label(r)
-        sum_score = _compute_sum_score(r)
-        end = (r.get("event_context") or {}).get("end_order")
-        out.append({"participant": label, "end_order": end, "sum_score": sum_score})
+        out.append({
+            "participant": _participant_label(r),
+            "end_order": (r.get("event_context") or {}).get("end_order"),
+            "sum_score": _compute_sum_score(r)
+        })
     df = pd.DataFrame(out)
     return df.groupby(["participant","end_order"], as_index=False)["sum_score"].sum()
 
@@ -122,10 +138,11 @@ def fetch_scores_per_range(club_competition_id=None, round_id=None, archer_accou
     if not rows: return pd.DataFrame()
     out = []
     for r in rows:
-        label = _participant_label(r)
-        sum_score = _compute_sum_score(r)
-        rng = (r.get("event_context") or {}).get("range_id")
-        out.append({"participant": label, "range_id": rng, "sum_score": sum_score})
+        out.append({
+            "participant": _participant_label(r),
+            "range_id": (r.get("event_context") or {}).get("range_id"),
+            "sum_score": _compute_sum_score(r)
+        })
     df = pd.DataFrame(out)
     return df.groupby(["participant","range_id"], as_index=False)["sum_score"].sum()
 
@@ -134,10 +151,11 @@ def fetch_scores_per_round(club_competition_id=None, round_id=None, archer_accou
     if not rows: return pd.DataFrame()
     out = []
     for r in rows:
-        label = _participant_label(r)
-        sum_score = _compute_sum_score(r)
-        rnd = (r.get("event_context") or {}).get("round_id")
-        out.append({"participant": label, "round_id": rnd, "sum_score": sum_score})
+        out.append({
+            "participant": _participant_label(r),
+            "round_id": (r.get("event_context") or {}).get("round_id"),
+            "sum_score": _compute_sum_score(r)
+        })
     df = pd.DataFrame(out)
     return df.groupby(["participant","round_id"], as_index=False)["sum_score"].sum().sort_values("sum_score", ascending=False)
 
@@ -145,10 +163,14 @@ def fetch_scores_per_round(club_competition_id=None, round_id=None, archer_accou
 # Yearly normalized average
 # ---------------------------
 def _max_score_for_round(round_id):
+    """
+    Derive max score for a round via event_context ends: (#unique (range_id,end_order)) * 6 * 10.
+    If your schema has a stored max per round, prefer that instead.
+    """
     try:
         q = supabase.table("event_context").select("round_id, range_id, end_order").eq("round_id", round_id).execute()
         rows = q.data or []
-        if not rows: 
+        if not rows:
             return None
         ends = {(r.get("range_id"), r.get("end_order")) for r in rows if r.get("end_order") is not None}
         total_arrows = len(ends) * 6
@@ -158,48 +180,34 @@ def _max_score_for_round(round_id):
         return None
 
 def fetch_yearly_normalized_average(yc_id=None, round_id=None, archer_account_id=None):
+    """
+    Aggregate the same round across *all* club competitions inside a Yearly Club Championship,
+    using the event_context.yearly_club_championship_id linkage from your schema.
+    """
     if not yc_id or not round_id:
         st.info("Please select both a Yearly Club Championship and a Round.")
         return pd.DataFrame()
-    try:
-        comp_res = supabase.table("club_competition").select("club_competition_id, yearly_club_championship_id").eq("yearly_club_championship_id", yc_id).execute()
-        comp_ids = [r["club_competition_id"] for r in (comp_res.data or []) if r.get("club_competition_id")]
-        if not comp_ids:
-            st.info("No competitions found for this yearly championship (check link table). # placeholder")
-            return pd.DataFrame()
-    except Exception as e:
-        st.warning(f"Could not load competitions for yearly championship: {e}")
-        return pd.DataFrame()
 
-    try:
-        query = supabase.table("participating").select(
-            "participating_id, archer_id, sum_score, "
-            "score_1st_arrow,score_2nd_arrow,score_3rd_arrow,score_4th_arrow,score_5th_arrow,score_6th_arrow, "
-            "event_context!inner(club_competition_id,round_id), "
-            "archer!inner(archer_id, account!inner(fullname))"
-        ).eq("type","competition").eq("event_context.round_id", round_id).in_("event_context.club_competition_id", comp_ids)
-        if archer_account_id:
-            query = query.eq("archer.account_id", archer_account_id)
-        res = query.execute()
-        rows = res.data or []
-    except Exception as e:
-        st.warning(f"Could not load participating rows: {e}")
-        return pd.DataFrame()
-
+    # Fetch participating rows filtered by yearly and round directly via event_context
+    rows = _fetch_participating_base(
+        club_competition_id=None,
+        round_id=round_id,
+        archer_account_id=archer_account_id,
+        yearly_championship_id=yc_id
+    )
     if not rows:
         return pd.DataFrame()
 
     max_score = _max_score_for_round(round_id)
     if not max_score:
-        st.info("Could not determine max score for the selected round — normalized average will fallback to raw average. # placeholder")
+        st.info("Could not determine max score for the selected round — falling back to raw averages. # placeholder")
         max_score = None
 
     out = []
     for r in rows:
-        label = _participant_label(r)
         s = _compute_sum_score(r)
         norm = (s / max_score) if max_score else None
-        out.append({"participant": label, "sum_score": s, "normalized": norm})
+        out.append({"participant": _participant_label(r), "sum_score": s, "normalized": norm})
 
     df = pd.DataFrame(out)
     if "normalized" in df.columns and df["normalized"].notna().any():
@@ -215,13 +223,14 @@ def fetch_yearly_normalized_average(yc_id=None, round_id=None, archer_account_id
 def fetch_ranking_in_round(club_competition_id=None, round_id=None):
     rows = _fetch_participating_base(club_competition_id, round_id, None)
     if not rows: return pd.DataFrame()
-    out = [{"participant": _participant_label(r), "sum_score": _compute_sum_score(r)} for r in rows]
-    df = pd.DataFrame(out)
+    df = pd.DataFrame([
+        {"participant": _participant_label(r), "sum_score": _compute_sum_score(r)}
+        for r in rows
+    ])
     return df.groupby("participant", as_index=False)["sum_score"].sum().sort_values("sum_score", ascending=False)
 
 def fetch_ranking_yearly_same_round(yc_id=None, round_id=None):
-    df = fetch_yearly_normalized_average(yc_id, round_id, None)
-    return df
+    return fetch_yearly_normalized_average(yc_id, round_id, None)
 
 # ---------------------------
 # Category percentile
@@ -231,12 +240,14 @@ def fetch_category_percentile_distribution(archer_account_id=None, category_id=N
         st.info("Please select a category.")
         return pd.DataFrame(), None
     try:
+        # Schema: archer_id, category_id, percentile
         q = supabase.table("category_rating_percentile").select("archer_id, category_id, percentile").eq("category_id", category_id)
         res = q.execute()
         rows = res.data or []
     except Exception as e:
         st.warning(f"Could not load category rating distribution: {e}")
         return pd.DataFrame(), None
+
     if not rows:
         return pd.DataFrame(), None
 
