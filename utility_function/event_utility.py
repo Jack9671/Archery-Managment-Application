@@ -1167,7 +1167,7 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
-                "event_context_id": row["event_context_id"],
+                "event_context_id": int(row["event_context_id"]),
                 "type": "competition",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
@@ -1175,7 +1175,7 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
-                "event_context_id": row["event_context_id"],
+                "event_context_id": int(row["event_context_id"]),
                 "type": "practice",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
@@ -1188,7 +1188,7 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
-                "event_context_id": row["event_context_id"],
+                "event_context_id": int(row["event_context_id"]),
                 "type": "championship",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
@@ -1196,7 +1196,7 @@ def add_participant_to_participating_table(user_id: str, event_type: str, event_
         for _, row in event_context_df.iterrows():
             supabase.table("participating").insert({
                 "participating_id": user_id,
-                "event_context_id": row["event_context_id"],
+                "event_context_id": int(row["event_context_id"]),
                 "type": "practice",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
