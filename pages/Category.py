@@ -161,7 +161,6 @@ if is_aaf_member:
             "Age Division",
             "Target Face",
             "Range",
-            "Round"
         ])
         
         if add_option == "Equipment":
@@ -316,7 +315,6 @@ if is_aaf_member:
                                 st.error("Failed to add range. Check the terminal/console for detailed error information.")
                         except Exception as e:
                             st.error(f"Failed to add range. Error: {str(e)}")
-    
         
         else:
             st.info("👆 Please select an option from the dropdown above.")
