@@ -12,6 +12,7 @@ with tab1:
     st.header("Sign Up")
     with st.form("signup_form"):
         st.subheader("Account Information")
+        
         col1, col2 = st.columns(2)
         
         with col1:
