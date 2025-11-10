@@ -1,8 +1,33 @@
 from utility_function.initilize_dbconnection import supabase
 import pandas as pd
+from datetime import datetime
 
-def get_all_clubs(search_query=None):
-    """Get all clubs, optionally filtered by search query"""
+def calculate_age(date_of_birth):
+    """Calculate age from date of birth"""
+    if not date_of_birth:
+        return None
+    
+    try:
+        if isinstance(date_of_birth, str):
+            dob = datetime.fromisoformat(date_of_birth.replace('Z', '+00:00'))
+        else:
+            dob = date_of_birth
+        
+        today = datetime.now()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return age
+    except Exception as e:
+        print(f"Error calculating age: {e}")
+        return None
+
+def check_age_eligibility(archer_age, min_age, max_age):
+    """Check if archer's age meets club requirements"""
+    if archer_age is None:
+        return False
+    return min_age <= archer_age <= max_age
+
+def get_all_clubs(search_query=None, min_age_filter=None, max_age_filter=None):
+    """Get all clubs, optionally filtered by search query and age range"""
     try:
         query = supabase.table("club").select("*")
         
@@ -10,7 +35,18 @@ def get_all_clubs(search_query=None):
             query = query.ilike("name", f"%{search_query}%")
         
         response = query.execute()
-        return pd.DataFrame(response.data) if response.data else pd.DataFrame()
+        clubs_df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
+        
+        # Apply age range filter if specified
+        if not clubs_df.empty and min_age_filter is not None and max_age_filter is not None:
+            # Filter clubs where the requested age range is a subset or matches the club's age range
+            # This means: club's min_age <= requested min_age AND club's max_age >= requested max_age
+            clubs_df = clubs_df[
+                (clubs_df['min_age_to_join'] <= min_age_filter) & 
+                (clubs_df['max_age_to_join'] >= max_age_filter)
+            ]
+        
+        return clubs_df
     except Exception as e:
         print(f"Error fetching clubs: {e}")
         return pd.DataFrame()
@@ -39,30 +75,85 @@ def get_archer_club(archer_id):
         print(f"Error fetching archer club: {e}")
         return None
 
-def create_club(creator_id, club_name, club_description, formation_date, club_logo_url=None):
+def create_club(creator_id, club_name, club_description, formation_date, club_logo_url=None, min_age=10, max_age=70, open_to_join=True):
     """Create a new club"""
     try:
+        from datetime import datetime
+        
+        print(f"Creating club with data: creator_id={creator_id}, name={club_name}")
+        
+        current_time = datetime.now().isoformat()
+        
         response = supabase.table("club").insert({
             "creator_id": creator_id,
             "name": club_name,
             "about_club": club_description,
-            "formation_date": formation_date,
-            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png"
+            "club_logo_url": club_logo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Club_Logo/Default_Club_Logo.png",
+            "min_age_to_join": min_age,
+            "max_age_to_join": max_age,
+            "open_to_join": open_to_join,
+            "created_at": current_time,
+            "updated_at": current_time
         }).execute()
+        
+        print(f"Insert response: {response}")
         
         if response.data:
             club_id = response.data[0]['club_id']
+            print(f"Club created with ID: {club_id}, updating archer's club_id...")
             # Update archer's club_id
-            supabase.table("archer").update({"club_id": club_id}).eq("archer_id", creator_id).execute()
+            update_response = supabase.table("archer").update({"club_id": club_id}).eq("archer_id", creator_id).execute()
+            print(f"Update archer response: {update_response}")
             return response.data[0]
-        return None
+        else:
+            print(f"No data returned from insert. Response: {response}")
+            return None
     except Exception as e:
         print(f"Error creating club: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def join_club(archer_id, club_id, sender_word="I would like to join this club."):
     """Request to join a club (submit enrollment form)"""
     try:
+        # Get club age restrictions
+        club_response = supabase.table("club").select("min_age_to_join, max_age_to_join, open_to_join").eq("club_id", club_id).execute()
+        
+        if not club_response.data:
+            print(f"Club {club_id} not found")
+            return None
+        
+        club = club_response.data[0]
+        
+        # Check if club is open to join
+        if not club.get('open_to_join', True):
+            print(f"Club {club_id} is not open to join")
+            return None
+        
+        # Get archer's date of birth to calculate age from account table
+        account_response = supabase.table("account").select("date_of_birth").eq("account_id", archer_id).execute()
+        
+        if not account_response.data:
+            print(f"Archer account {archer_id} not found")
+            return None
+        
+        date_of_birth = account_response.data[0].get('date_of_birth')
+        
+        if date_of_birth:
+            from datetime import datetime
+            dob = datetime.fromisoformat(date_of_birth.replace('Z', '+00:00'))
+            today = datetime.now()
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            
+            # Check age restrictions
+            min_age = club.get('min_age_to_join', 10)
+            max_age = club.get('max_age_to_join', 70)
+            
+            if age < min_age or age > max_age:
+                print(f"Archer {archer_id} (age {age}) does not meet age requirement ({min_age}-{max_age})")
+                return "age_restriction"
+        
         # Check if there's already a pending request
         existing = supabase.table("club_enrollment_form").select("*").eq("sender_id", archer_id).eq("club_id", club_id).eq("status", "pending").execute()
         
@@ -75,7 +166,10 @@ def join_club(archer_id, club_id, sender_word="I would like to join this club.")
             "sender_word": sender_word,
             "club_id": club_id,
             "status": "pending",
-            "club_creator_word": ""
+            "club_creator_word": "",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+
         }).execute()
         
         if response.data:

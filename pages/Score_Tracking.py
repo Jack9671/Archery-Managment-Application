@@ -37,7 +37,7 @@ if st.session_state['role'] == 'archer':
         st.stop()
     
     # Input widgets for filtering
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         selected_competition_name = st.selectbox(
             "Select Club Competition*",
@@ -49,24 +49,38 @@ if st.session_state['role'] == 'archer':
         rounds = score_tracking_utility.get_round_map_of_an_event('club competition', club_competition_map[selected_competition_name])
         selected_round_name = st.selectbox(
             "Select Round*",
-            list(rounds.keys()),
+            list(rounds.keys()) if rounds else ["No rounds available"],
             help="Select the round you want"
         )
+    
+    with col3:
+        if selected_round_name and selected_round_name != "No rounds available":
+            range_map = score_tracking_utility.get_range_map_of_an_event(club_competition_map[selected_competition_name], rounds[selected_round_name])
+        else:
+            range_map = {}
+        selected_range_name = st.selectbox(
+            "Select Range*",
+            list(range_map.keys()) if range_map else ["No ranges available"],
+            help="Select the range you want"
+        )
 
-    if selected_competition_name and selected_round_name:
+    if (selected_competition_name and 
+        selected_round_name and selected_round_name != "No rounds available" and
+        selected_range_name and selected_range_name != "No ranges available"):
         # Get IDs from names
         club_competition_id = club_competition_map[selected_competition_name]
         round_id = rounds[selected_round_name]
+        range_id = range_map[selected_range_name]
         participating_id = st.session_state['user_id']
         
         # Fetch scores
-        scores = get_archer_scores(participating_id, club_competition_id, round_id)
+        scores = get_archer_scores(participating_id, club_competition_id, round_id, range_id)
         
-        if not scores:
-            st.info("No score records found for the selected competition and round.")
-        else:
-            st.success(f"Found {len(scores)} end(s) for this competition and round.")
-            
+        if not scores and st.session_state.get('role') == 'recorder':
+            st.info("the archer does not register for the selected round.")
+        elif not scores and st.session_state.get('role') == 'archer':
+            st.info("you do not register for this round.")
+        else:            
             # Format data for display
             df = format_participating_data_for_display(scores, include_archer_name=False)
             
@@ -147,21 +161,21 @@ if st.session_state['role'] == 'archer':
                     else:
                         st.info("No valid changes to update.")
     else:
-        st.info("Please select both a competition and a round to view your scores.")
+        st.info("Please select all filters (competition, round, and range) to view your scores.")
 
 elif st.session_state['role'] == 'recorder':
     # Recorder view - single tab
     st.header("Score Tracking for Recorder")
     
-    # Get available club competitions, rounds, and archers
-    club_competition_map = score_tracking_utility.get_club_competition_map()
+    # Get available club competitions that this recorder is connected with
+    club_competition_map = score_tracking_utility.get_club_competition_map_of_a_recorder(st.session_state['user_id'])
     
     if not club_competition_map:
         st.warning("No competitions available. Please write form to apply to record for competitions.")
         st.stop()
     
     # Input widgets for filtering
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         selected_competition_name = st.selectbox(
             "Select Club Competition*",
@@ -173,24 +187,38 @@ elif st.session_state['role'] == 'recorder':
         round_map = score_tracking_utility.get_round_map_of_an_event('club competition', club_competition_map[selected_competition_name])
         selected_round_name = st.selectbox(
             "Select Round",
-            list(round_map.keys())
+            list(round_map.keys()) if round_map else ["No rounds available"]
         )
     
     with col3:
+        if selected_round_name and selected_round_name != "No rounds available":
+            range_map = score_tracking_utility.get_range_map_of_an_event(club_competition_map[selected_competition_name], round_map[selected_round_name])
+        else:
+            range_map = {}
+        selected_range_name = st.selectbox(
+            "Select Range",
+            list(range_map.keys()) if range_map else ["No ranges available"]
+        )
+    
+    with col4:
         participant_map = score_tracking_utility.get_participant_map_of_a_club_competition(club_competition_map[selected_competition_name])
         selected_archer_name = st.selectbox(
             "Select Participant",
-            list(participant_map.keys())
+            list(participant_map.keys()) if participant_map else ["No participants available"]
         )
     
-    if selected_competition_name:
+    if (selected_competition_name and 
+        selected_round_name and selected_round_name != "No rounds available" and
+        selected_range_name and selected_range_name != "No ranges available" and
+        selected_archer_name and selected_archer_name != "No participants available"):
         # Get IDs from names
         club_competition_id = club_competition_map[selected_competition_name]
         round_id = round_map[selected_round_name]
+        range_id = range_map[selected_range_name]
         participating_id = participant_map[selected_archer_name]
 
         # Fetch scores
-        scores = get_recorder_scores(club_competition_id, round_id, participating_id)
+        scores = get_recorder_scores(club_competition_id, round_id, range_id, participating_id)
         
         if not scores:
             st.info("No score records found for the selected filters.")
@@ -267,4 +295,4 @@ elif st.session_state['role'] == 'recorder':
                     else:
                         st.info("No changes to update.")
     else:
-        st.info("Please select a competition to view scores.")
+        st.info("Please select all filters (competition, round, range, and participant) to view scores.")

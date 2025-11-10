@@ -74,10 +74,10 @@ def filter_accounts(email_filter=None, fullname_filter=None, min_age=None, max_a
         print(f"Error filtering accounts: {e}")
         return pd.DataFrame()
 
-def search_account_by_email_and_dob(email_address, date_of_birth):
-    """Search for an account by email and date of birth"""
+def search_account_by_email(email_address):
+    """Search for an account by email"""
     try:
-        response = supabase.table("account").select("*").eq("email_address", email_address).eq("date_of_birth", date_of_birth).execute()
+        response = supabase.table("account").select("*").eq("email_address", email_address).execute()
         return response.data[0] if response.data else None
     except Exception as e:
         print(f"Error searching account: {e}")

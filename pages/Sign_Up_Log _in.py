@@ -68,6 +68,8 @@ with tab1:
             
         elif role == "recorder":
             st.subheader("Recorder-Specific Information")
+            year_of_experience = st.number_input("Years of Experience*", min_value=0, max_value=100, value=0, 
+                                                help="How many years of experience do you have as a recorder?")
             about_recorder = st.text_area("About Me*", help="Tell others about your experience as a recorder")
 
         st.subheader("Profile Picture (Optional)")
@@ -92,6 +94,7 @@ with tab1:
                 required_fields["Experience Level"] = level
                 required_fields["Default Equipment"] = default_equipment
             elif role == "recorder":
+                required_fields["Years of Experience"] = year_of_experience if 'year_of_experience' in locals() else None
                 required_fields["About Recorder"] = about_recorder
             
             missing_fields = [field for field, value in required_fields.items() if not value or value == ""]
@@ -173,6 +176,7 @@ with tab1:
                     elif role == "recorder":
                         recorder_response = supabase.table("recorder").insert({
                             "recorder_id": account_id,
+                            "year_of_experience": year_of_experience,
                             "about_recorder": about_recorder
                         }).execute()
                         

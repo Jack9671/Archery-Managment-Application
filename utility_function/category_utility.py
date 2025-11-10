@@ -1,6 +1,6 @@
 from utility_function.initilize_dbconnection import supabase
 import pandas as pd
-
+from datetime import datetime
 def get_all_equipment():
     """Get all equipment types"""
     try:
@@ -84,7 +84,8 @@ def add_equipment(equipment_name, description, photo_url=None):
         response = supabase.table("equipment").insert({
             "name": equipment_name,
             "description": description,
-            "photo_url": photo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Equipment_Photo/Default_Equipment_Photo.png"
+            "photo_url": photo_url or "https://ghcpcyvethwdzzgyymfp.supabase.co/storage/v1/object/public/User%20Uploaded/Equipment_Photo/Default_Equipment_Photo.png",
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:
@@ -96,7 +97,8 @@ def add_discipline(discipline_name, description):
     try:
         response = supabase.table("discipline").insert({
             "name": discipline_name,
-            "description": description
+            "description": description,
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:
@@ -108,7 +110,8 @@ def add_age_division(min_age, max_age):
     try:
         response = supabase.table("age_division").insert({
             "min_age": min_age,
-            "max_age": max_age
+            "max_age": max_age,
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:
@@ -120,7 +123,8 @@ def add_target_face(diameter, unit_of_length):
     try:
         response = supabase.table("target_face").insert({
             "diameter": diameter,
-            "unit_of_length": unit_of_length
+            "unit_of_length": unit_of_length,
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:
@@ -130,14 +134,18 @@ def add_target_face(diameter, unit_of_length):
 def add_range(distance, unit_of_length, target_face_id):
     """Add new range (AAF members only)"""
     try:
+        from datetime import datetime
         response = supabase.table("range").insert({
             "distance": distance,
             "unit_of_length": unit_of_length,
-            "target_face_id": target_face_id
+            "target_face_id": target_face_id,
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:
         print(f"Error adding range: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def add_round(round_name, category_id):
@@ -145,7 +153,8 @@ def add_round(round_name, category_id):
     try:
         response = supabase.table("round").insert({
             "name": round_name,
-            "category_id": category_id
+            "category_id": category_id,
+            "created_at": datetime.now().isoformat()
         }).execute()
         return response.data[0] if response.data else None
     except Exception as e:

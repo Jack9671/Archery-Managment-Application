@@ -31,7 +31,7 @@ def get_archers():
         st.error(f"Error fetching archers: {str(e)}")
         return {}
 
-def get_archer_scores(participating_id, club_competition_id, round_id):
+def get_archer_scores(participating_id, club_competition_id, round_id, range_id=None):
     """
     Get participating records for a specific archer in a specific competition and round
     
@@ -39,13 +39,14 @@ def get_archer_scores(participating_id, club_competition_id, round_id):
         participating_id: The archer's ID
         club_competition_id: The club competition ID
         round_id: The round ID
+        range_id: Optional range ID filter
     
     Returns:
         List of participating records
     """
     try:
         # Query participating table with joins to get event context details
-        response = supabase.table("participating").select(
+        query = supabase.table("participating").select(
             "*, event_context!inner(club_competition_id, round_id, end_order, range_id)"
         ).eq(
             "participating_id", participating_id
@@ -55,20 +56,27 @@ def get_archer_scores(participating_id, club_competition_id, round_id):
             "event_context.round_id", round_id
         ).eq(
             "type", "competition"
-        ).execute()
+        )
+        
+        # Add optional range filter
+        if range_id:
+            query = query.eq("event_context.range_id", range_id)
+        
+        response = query.execute()
         
         return response.data if response.data else []
     except Exception as e:
         st.error(f"Error fetching archer scores: {str(e)}")
         return []
 
-def get_recorder_scores(club_competition_id, round_id=None, participating_id=None):
+def get_recorder_scores(club_competition_id, round_id=None, range_id=None, participating_id=None):
     """
     Get participating records for a recorder with optional filters
     
     Args:
         club_competition_id: The club competition ID
         round_id: Optional round ID filter
+        range_id: Optional range ID filter
         participating_id: Optional archer ID filter
     
     Returns:
@@ -87,6 +95,8 @@ def get_recorder_scores(club_competition_id, round_id=None, participating_id=Non
         # Add optional filters
         if round_id:
             query = query.eq("event_context.round_id", round_id)
+        if range_id:
+            query = query.eq("event_context.range_id", range_id)
         if participating_id:
             query = query.eq("participating_id", participating_id)
         
@@ -115,8 +125,8 @@ def update_participating_scores(updates):
                 update.get('score_2nd_arrow', 0) +
                 update.get('score_3rd_arrow', 0) +
                 update.get('score_4th_arrow', 0) +
-                update.get('score_5st_arrow', 0) +
-                update.get('score_6st_arrow', 0)
+                update.get('score_5th_arrow', 0) +
+                update.get('score_6th_arrow', 0)
             )
             
             # Prepare update data
@@ -125,8 +135,8 @@ def update_participating_scores(updates):
                 'score_2nd_arrow': update.get('score_2nd_arrow'),
                 'score_3rd_arrow': update.get('score_3rd_arrow'),
                 'score_4th_arrow': update.get('score_4th_arrow'),
-                'score_5st_arrow': update.get('score_5st_arrow'),
-                'score_6st_arrow': update.get('score_6st_arrow'),
+                'score_5th_arrow': update.get('score_5th_arrow'),
+                'score_6th_arrow': update.get('score_6th_arrow'),
                 'sum_score': sum_score,
                 'updated_at': 'now()'
             }
@@ -176,8 +186,8 @@ def format_participating_data_for_display(records, include_archer_name=False):
             'Arrow 2': record['score_2nd_arrow'],
             'Arrow 3': record['score_3rd_arrow'],
             'Arrow 4': record['score_4th_arrow'],
-            'Arrow 5': record['score_5st_arrow'],
-            'Arrow 6': record['score_6st_arrow'],
+            'Arrow 5': record['score_5th_arrow'],
+            'Arrow 6': record['score_6th_arrow'],
             'Total': record['sum_score'],
             'Status': record['status'],
             # Hidden fields for update
@@ -320,6 +330,34 @@ def get_club_competition_map():
     data = supabase.table("club_competition").select("club_competition_id, name").execute().data
     return {c["name"] : c["club_competition_id"] for c in data}
 
+def get_club_competition_map_of_a_recorder(recorder_id: str) -> dict:
+    """Get a mapping of club competition names to IDs that a recorder is recording for"""
+    try:
+        # Get all club competition IDs from recording table for this recorder
+        # Note: recording_id is the foreign key to the recorder's account_id
+        response = supabase.table("recording").select("club_competition_id")\
+            .eq("recording_id", recorder_id)\
+            .not_.is_("club_competition_id", "null")\
+            .execute()
+        
+        if not response.data:
+            return {}
+        
+        club_competition_ids = list(set([record['club_competition_id'] for record in response.data if record.get('club_competition_id')]))
+        
+        if not club_competition_ids:
+            return {}
+        
+        # Get club competition details
+        response = supabase.table("club_competition").select("club_competition_id, name")\
+            .in_("club_competition_id", club_competition_ids)\
+            .execute()
+        
+        return {comp['name']: comp['club_competition_id'] for comp in response.data} if response.data else {}
+    except Exception as e:
+        st.error(f"Error fetching recorder's club competition map: {str(e)}")
+        return {}
+
 def get_all_participant_id_of_a_club_competition(club_competition_id: str) -> list:
     """Get all participant IDs of a club competition from event_context and participating tables"""
     try:
@@ -354,4 +392,33 @@ def get_participant_map_of_a_club_competition(club_competition_id: str) -> dict:
         return {archer['account']['fullname']: archer['archer_id'] for archer in response.data} if response.data else {}
     except Exception as e:
         st.error(f"Error fetching participant map: {str(e)}")
+        return {}
+
+def get_range_map_of_an_event(club_competition_id: str, round_id: str) -> dict:
+    """Get a mapping of range names to IDs for a given club competition and round"""
+    try:
+        # Get all range_ids from event_context for the given competition and round
+        response = supabase.table("event_context").select("range_id")\
+            .eq("club_competition_id", club_competition_id)\
+            .eq("round_id", round_id)\
+            .execute()
+        
+        if not response.data:
+            return {}
+        
+        range_ids = list(set([record['range_id'] for record in response.data if record.get('range_id')]))
+        
+        if not range_ids:
+            return {}
+        
+        # Get range details from range table (distance and unit_of_length)
+        response = supabase.table("range").select("range_id, distance, unit_of_length")\
+            .in_("range_id", range_ids)\
+            .execute()
+        
+        # Create descriptive names from distance and unit
+        return {f"{range_info['distance']} {range_info['unit_of_length']}": range_info['range_id'] 
+                for range_info in response.data} if response.data else {}
+    except Exception as e:
+        st.error(f"Error fetching range map: {str(e)}")
         return {}

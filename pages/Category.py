@@ -161,7 +161,6 @@ if is_aaf_member:
             "Age Division",
             "Target Face",
             "Range",
-            "Round"
         ])
         
         if add_option == "Equipment":
@@ -253,7 +252,8 @@ if is_aaf_member:
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    diameter = st.number_input("Diameter*", min_value=0.0, step=0.1, value=122.0)
+                    diameter = st.number_input("Diameter*", min_value=1, step=1, value=122,
+                                              help="Enter diameter as an integer")
                 
                 with col2:
                     unit_options = ["mm", "cm", "m", "km", "in", "ft", "yd", "mi", "pc"]
@@ -270,51 +270,51 @@ if is_aaf_member:
                         st.error("Failed to add target face.")
         
         elif add_option == "Range":
-            with st.form("add_range_form"):
-                st.subheader("➕ Add New Range")
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    distance = st.number_input("Distance*", min_value=0.0, step=0.1, value=70.0)
-                
-                with col2:
-                    unit_options = ["mm", "cm", "m", "km", "in", "ft", "yd", "mi", "pc"]
-                    unit_of_length = st.selectbox("Unit of Length*", unit_options)
-                
-                with col3:
-                    target_face_id = st.number_input("Target Face ID*", min_value=1, step=1, value=1)
-                
-                submit = st.form_submit_button("Add Range", type="primary")
-                
-                if submit:
-                    result = add_range(distance, unit_of_length, target_face_id)
-                    if result:
-                        st.success(f"✅ Range added successfully! ID: {result['range_id']}")
-                        st.balloons()
-                    else:
-                        st.error("Failed to add range.")
-        
-        elif add_option == "Round":
-            with st.form("add_round_form"):
-                st.subheader("➕ Add New Round")
-                
-                round_name = st.text_input("Round Name*", placeholder="e.g., Male U21 Longbow")
-                category_id = st.number_input("Category ID*", min_value=1, step=1, value=1,
-                    help="The category this round belongs to")
-                
-                submit = st.form_submit_button("Add Round", type="primary")
-                
-                if submit:
-                    if not round_name:
-                        st.error("Please enter a round name!")
-                    else:
-                        result = add_round(round_name, category_id)
-                        if result:
-                            st.success(f"✅ Round added successfully! ID: {result['round_id']}")
-                            st.balloons()
-                        else:
-                            st.error("Failed to add round.")
+            st.subheader("➕ Add New Range")
+            
+            # Get all target faces for the dropdown
+            target_faces_response = supabase.table("target_face").select("*").execute()
+            
+            if not target_faces_response.data:
+                st.warning("No target faces available. Please add a target face first.")
+            else:
+                with st.form("add_range_form"):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        distance = st.number_input("Distance*", min_value=1, step=1, value=70,
+                                                  help="Enter distance as an integer")
+                    
+                    with col2:
+                        unit_options = ["mm", "cm", "dm", "m", "dam", "hm", "km", "in", "ft", "yd", "mi", "nmi", "µm", "nm", "pm", "fm", "ly", "au", "pc"]
+                        unit_of_length = st.selectbox("Unit of Length*", unit_options)
+                    
+                    with col3:
+                        # Build descriptive target face options
+                        target_face_options = {}
+                        for tf in target_faces_response.data:
+                            label = f"Target Face {tf['target_face_id']}: {tf['diameter']}{tf['unit_of_length']} diameter"
+                            target_face_options[label] = tf['target_face_id']
+                        
+                        selected_target_face_label = st.selectbox(
+                            "Target Face*",
+                            list(target_face_options.keys()),
+                            help="Select the target face for this range"
+                        )
+                        target_face_id = target_face_options[selected_target_face_label]
+                    
+                    submit = st.form_submit_button("Add Range", type="primary")
+                    
+                    if submit:
+                        try:
+                            result = add_range(distance, unit_of_length, target_face_id)
+                            if result:
+                                st.success(f"✅ Range added successfully! ID: {result['range_id']}")
+                                st.balloons()
+                            else:
+                                st.error("Failed to add range. Check the terminal/console for detailed error information.")
+                        except Exception as e:
+                            st.error(f"Failed to add range. Error: {str(e)}")
         
         else:
             st.info("👆 Please select an option from the dropdown above.")
