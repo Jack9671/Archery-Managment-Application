@@ -1,10 +1,16 @@
 import os
+from datetime import datetime
+import streamlit as st
 from dotenv import load_dotenv
 import google.generativeai as genai
-import streamlit as st
+from utility_function.initilize_dbconnection import supabase
+
+# --- Load API key ---
 load_dotenv()
 google_api_key = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=google_api_key)
+
+# --- Khởi tạo model Gemini ---
 model = genai.GenerativeModel(
     "gemini-2.0-flash-lite",
     system_instruction="""You are a chatbot assistant for an archery management system.
@@ -18,75 +24,114 @@ Your goals:
    - English: "Sorry, I only assist with archery-related topics."
    - Vietnamese: "Xin lỗi, tôi chỉ hỗ trợ các vấn đề liên quan đến bắn cung."""
 )
+
 # --- Cấu hình giao diện ---
 st.set_page_config(page_title="Archery Chatbot", page_icon="🏹")
 st.title("🏹 Archery Management Chatbot")
 
-# --- Khởi tạo danh sách hội thoại ---
-if "conversations" not in st.session_state:
-    st.session_state.conversations = []  # danh sách các hội thoại
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = None  # hội thoại hiện tại
+# --- Lấy thông tin người dùng hiện tại ---
+if "user_id" not in st.session_state:
+    st.error("⚠️ Please log in first.")
+    st.stop()
 
-# ---  Quản lý hội thoại ---
-with st.expander("💬 Chat Sessions", expanded=True):
-    # Nút tạo hội thoại mới
-    if st.button("➕ New Chat", use_container_width=True):
-        new_chat = {
-            "id": len(st.session_state.conversations) + 1,
-            "messages": []
-        }
-        st.session_state.conversations.append(new_chat)
-        st.session_state.current_chat = new_chat["id"]
+user_id = st.session_state["user_id"]
+
+# --- Sidebar: Chat sessions ---
+st.sidebar.header("💬 Chat Sessions")
+
+# Lấy danh sách hội thoại từ DB
+conversations = supabase.table("ai_conversation_history") \
+    .select("conversation_order") \
+    .eq("account_id", user_id) \
+    .execute()
+
+# Trích xuất danh sách chat unique
+chat_ids = sorted(list({c["conversation_order"] for c in conversations.data})) if conversations.data else []
+
+# Session state giữ chat hiện tại
+if "current_chat" not in st.session_state:
+    st.session_state.current_chat = None
+
+# --- Tạo chat mới ---
+if st.sidebar.button("➕ New Chat"):
+    new_order = (max(chat_ids) + 1) if chat_ids else 1
+    st.session_state.current_chat = new_order
+    st.success(f"🆕 New chat #{new_order} created!")
+    st.rerun()
+
+# --- Danh sách chat trong sidebar ---
+for cid in chat_ids:
+    col1, col2 = st.sidebar.columns([4, 1])
+    if col1.button(f"Chat {cid}", key=f"select_{cid}"):
+        st.session_state.current_chat = cid
         st.rerun()
 
-    # Hiển thị danh sách hội thoại
-    for chat in st.session_state.conversations:
-        col1, col2 = st.columns([4, 1])
-        if col1.button(f"Chat {chat['id']}", key=f"select_{chat['id']}", use_container_width=True):
-            st.session_state.current_chat = chat["id"]
-            st.rerun()
-        if col2.button("🗑", key=f"delete_{chat['id']}"):
-            st.session_state.conversations = [
-                c for c in st.session_state.conversations if c["id"] != chat["id"]
-            ]
-            if st.session_state.current_chat == chat["id"]:
-                st.session_state.current_chat = None
-            st.rerun()
+    if col2.button("🗑", key=f"delete_{cid}"):
+        # Xóa toàn bộ conversation khỏi DB
+        supabase.table("ai_conversation_history") \
+            .delete() \
+            .eq("account_id", user_id) \
+            .eq("conversation_order", cid) \
+            .execute()
 
-# --- HIỂN THỊ NỘI DUNG CHAT ĐANG CHỌN ---
+        # Xóa khỏi session state
+        st.session_state.conversations = [
+            c for c in st.session_state.get("conversations", []) if c.get("id") != cid
+        ]
+        if st.session_state.current_chat == cid:
+            st.session_state.current_chat = None
+
+        st.warning(f"Chat {cid} deleted permanently.")
+        st.rerun()
+
+# --- Hiển thị khung chat ---
 if st.session_state.current_chat:
-    chat = next(
-        (c for c in st.session_state.conversations if c["id"] == st.session_state.current_chat),
-        None
-    )
+    chat_id = st.session_state.current_chat
+    st.subheader(f"💭 Chat {chat_id}")
 
-    if chat:
-        st.subheader(f"💭 Chat {chat['id']}")
+    # Lấy lịch sử hội thoại trong DB
+    messages = supabase.table("ai_conversation_history") \
+        .select("*") \
+        .eq("account_id", user_id) \
+        .eq("conversation_order", chat_id) \
+        .order("prompt_response_order", desc=False) \
+        .execute().data or []
 
-        # Hiển thị tin nhắn cũ
-        for msg in chat["messages"]:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+    # Hiển thị tin nhắn cũ
+    for msg in messages:
+        with st.chat_message("user"):
+            st.markdown(msg["prompt"])
+        with st.chat_message("assistant"):
+            st.markdown(msg["response"])
 
-        # Nhập câu hỏi mới
-        user_input = st.chat_input("Ask a question about Archery...")
-        if user_input:
-            # Hiển thị tin nhắn người dùng
-            st.chat_message("user").markdown(user_input)
-            chat["messages"].append({"role": "user", "content": user_input})
+    # Nhập câu hỏi mới
+    user_input = st.chat_input("Nhập câu hỏi của bạn về bắn cung...")
+    if user_input:
+        st.chat_message("user").markdown(user_input)
 
-            # Gọi API Gemini
-            response = model.generate_content(user_input)
-            bot_reply = response.text
+        # Gọi model Gemini
+        response = model.generate_content(user_input)
+        bot_reply = response.text.strip()
 
-            # Hiển thị phản hồi chatbot
-            with st.chat_message("assistant"):
-                st.markdown(bot_reply)
+        # Hiển thị phản hồi chatbot
+        with st.chat_message("assistant"):
+            st.markdown(bot_reply)
 
-            # Lưu tin nhắn bot
-            chat["messages"].append({"role": "assistant", "content": bot_reply})
-            st.rerun()
+        # Xác định thứ tự tin nhắn tiếp theo
+        next_order = (max([m["prompt_response_order"] for m in messages], default=0)) + 1
+        now = datetime.utcnow().isoformat()
+
+        # Ghi vào DB
+        supabase.table("ai_conversation_history").insert({
+            "account_id": user_id,
+            "conversation_order": chat_id,
+            "prompt_response_order": next_order,
+            "prompt": user_input,
+            "response": bot_reply,
+            "created_at": now
+        }).execute()
+
+        st.rerun()
 
 else:
     st.write("👉 Tạo hoặc chọn một đoạn hội thoại ở bên trái để bắt đầu.")
