@@ -117,16 +117,6 @@ def get_round_schedule(club_competition_id):
         print(f"Error fetching round schedule: {e}")
         return pd.DataFrame()
 
-
-def get_available_rounds():
-    """Get all available rounds"""
-    try:
-        response = supabase.table("round").select("*").execute()
-        return pd.DataFrame(response.data) if response.data else pd.DataFrame()
-    except Exception as e:
-        print(f"Error fetching rounds: {e}")
-        return pd.DataFrame()
-
 def _create_round_schedules(club_competition_id, round_ids, round_schedules):
     """
     Create round_schedule entries for a competition
@@ -423,15 +413,6 @@ def _create_event_contexts(championship_id, competition_id, round_ids, ranges_co
         traceback.print_exc()
         return None
 
-def get_available_ranges():
-    """Get all available ranges"""
-    try:
-        response = supabase.table("range").select("*").execute()
-        return pd.DataFrame(response.data) if response.data else pd.DataFrame()
-    except Exception as e:
-        print(f"Error fetching ranges: {e}")
-        return pd.DataFrame()
-
 def get_all_clubs():
     """Get all clubs from database"""
     try:
@@ -563,6 +544,7 @@ def get_all_eligible_groups():
 def get_club_competition_map():
     data = supabase.table("club_competition").select("club_competition_id, name").execute().data
     return {c["name"] : c["club_competition_id"] for c in data}
+
 def get_yearly_club_championship_map():
     """Get mapping of yearly championship names to IDs (all championships, including past)"""
     data = supabase.table("yearly_club_championship").select("yearly_club_championship_id, name").execute().data
