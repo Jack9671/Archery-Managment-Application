@@ -61,3 +61,20 @@ def get_my_connections(user_id):
 # 8. Remove Friend
 def remove_friend(user_id, friend_id):
     supabase.rpc("remove_connection", {"uid": user_id, "fid": friend_id}).execute()
+# 9. Block User
+def is_blocked(sender_id: int, receiver_id: int) -> bool:
+    """
+    Kiểm tra xem sender có bị receiver block hay không
+    """
+    account_one = min(sender_id, receiver_id)
+    account_two = max(sender_id, receiver_id)
+
+    res = (
+        supabase.table("block_link")
+        .select("*")
+        .eq("account_one_id", account_one)
+        .eq("account_two_id", account_two)
+        .execute()
+    )
+
+    return bool(res.data)

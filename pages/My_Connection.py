@@ -210,10 +210,11 @@ def main():
     # TAB 2: Chat
     # ------------------------------------------------------------------
     with tab2:
-    
-        # Tạo placeholder để chứa chat và dễ rerun
+
+        # Placeholder để chứa chat và dễ rerun
         placeholder = st.empty()
 
+        # Lặp hiển thị chat (giống cơ chế auto refresh)
         while True:
             with placeholder.container():
                 chat_partner = st.session_state.get("chat_with")
@@ -223,31 +224,53 @@ def main():
                     st.stop()
 
                 # Lấy thông tin bạn chat
-                partner = supabase.table("account").select("*").eq("account_id", chat_partner).single().execute().data
+                partner = supabase.table("account") \
+                    .select("*") \
+                    .eq("account_id", chat_partner) \
+                    .single() \
+                    .execute().data
+
+                if not partner:
+                    st.warning("User not found.")
+                    st.stop()
+
                 st.subheader(f"💬 Chat with {partner['fullname']}")
 
+                # Kiểm tra xem có block không
+                account_one = min(st.session_state["user_id"], chat_partner)
+                account_two = max(st.session_state["user_id"], chat_partner)
+                block_check = supabase.table("block_link") \
+                    .select("*") \
+                    .eq("account_one_id", account_one) \
+                    .eq("account_two_id", account_two) \
+                    .execute()
+
+                if block_check.data:
+                    st.warning("⚠️ You cannot chat with this user because they are blocked.")
+                    st.stop()
+
                 # Lấy tất cả tin nhắn giữa 2 người
-                messages = get_private_chat(user_id, chat_partner)
+                messages = get_private_chat(st.session_state["user_id"], chat_partner)
 
                 if not messages:
                     st.caption("No messages yet.")
                 else:
                     for m in messages:
-                        align = "right" if m["sender_id"] == user_id else "left"
-                        bg = "#dcf8c6" if m["sender_id"] == user_id else "#f1f0f0"
+                        align = "right" if m["sender_id"] == st.session_state["user_id"] else "left"
+                        bg = "#dcf8c6" if m["sender_id"] == st.session_state["user_id"] else "#f1f0f0"
                         st.markdown(
                             f"<div style='text-align:{align}; background:{bg}; padding:8px; border-radius:10px; margin:4px;'>{m['message']}</div>",
                             unsafe_allow_html=True
                         )
 
-                # Input gửi tin nhắn
+                # Nhập tin nhắn mới
                 msg = st.chat_input("Type a message...")
                 if msg:
-                    append_private_message(user_id, chat_partner, msg)
+                    append_private_message(st.session_state["user_id"], chat_partner, msg)
                     st.rerun()
 
-            
-            time.sleep(20) #auto refresh after 20 seconds for update messages
+            # Tự động refresh sau 20 giây để cập nhật tin nhắn mới
+            time.sleep(20)
             st.rerun()
 
 
