@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utility_function.initilize_dbconnection import supabase
+from utility_function.event_utility import get_category_map
 from utility_function import performance_utility as perf
 
 # =========================
@@ -190,7 +191,7 @@ with tab2:
         st.subheader("📈 View Global Rating Percentile per Category")
 
         archer_map = perf.get_archers()
-        category_map = perf.get_categories()
+        category_map = get_category_map()
 
         colA, colB = st.columns([1.2, 1.2])
         with colA:
