@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import uuid
 from utility_function.initilize_dbconnection import supabase
+from utility_function.event_utility import get_category_map
 from utility_function.category_utility import (
     get_all_equipment, get_all_disciplines, get_all_age_divisions,
     get_all_categories, get_rounds_by_equipment, add_equipment,
@@ -119,13 +120,19 @@ with tab_categories:
     st.write("Categories are combinations of discipline, age division, and equipment")
     
     categories_df = get_all_categories()
-    
+    category_map = get_category_map()
+
+    # Build a name lookup by category_id
+    category_name_lookup = {v: k for k, v in category_map.items()}
+
+
     if not categories_df.empty:
         st.success(f"Found {len(categories_df)} category/categories")
         
         # Display categories
         for idx, category in categories_df.iterrows():
-            with st.expander(f"🏆 Category {category['category_id']}"):
+            display_name = category_name_lookup.get(category['category_id'], f"Category {category['category_id']}")
+            with st.expander(f"🏆 {display_name}"):
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
