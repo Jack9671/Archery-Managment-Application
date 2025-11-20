@@ -11,36 +11,36 @@ START TRANSACTION;
 -- ============================================
 
 -- Admin Account
-INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, deactivated, created_at, updated_at)
 VALUES 
-('admin1@archery.com.au', 'admin1@archery.com.au', 'Sarah Johnson', 'Australia', '1985-03-15', 'female', 'admin', NOW(), NOW());
+('admin1@archery.com.au', 'admin1@archery.com.au', 'Sarah Johnson', 'Australia', '1985-03-15', 'female', 'admin', false, NOW(), NOW());
 
 -- Australia Archery Federation Members
-INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, deactivated, created_at, updated_at)
 VALUES 
-('federation1@archery.com.au', 'federation1@archery.com.au', 'Michael Thompson', 'Australia', '1978-07-22', 'male', 'australia_archery_federation', NOW(), NOW()),
-('federation2@archery.com.au', 'federation2@archery.com.au', 'Emma Davis', 'Australia', '1982-11-30', 'female', 'australia_archery_federation', NOW(), NOW());
+('federation1@archery.com.au', 'federation1@archery.com.au', 'Michael Thompson', 'Australia', '1978-07-22', 'male', 'australia_archery_federation', false, NOW(), NOW()),
+('federation2@archery.com.au', 'federation2@archery.com.au', 'Emma Davis', 'Australia', '1982-11-30', 'female', 'australia_archery_federation', false, NOW(), NOW());
 
 -- Recorders
-INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, deactivated, created_at, updated_at)
 VALUES 
-('recorder1@archery.com.au', 'recorder1@archery.com.au', 'David Chen', 'Australia', '1990-05-12', 'male', 'recorder', NOW(), NOW()),
-('recorder2@archery.com.au', 'recorder2@archery.com.au', 'Lisa Martinez', 'Australia', '1988-09-25', 'female', 'recorder', NOW(), NOW()),
-('recorder3@archery.com.au', 'recorder3@archery.com.au', 'James Anderson', 'Australia', '1992-02-18', 'male', 'recorder', NOW(), NOW());
+('recorder1@archery.com.au', 'recorder1@archery.com.au', 'David Chen', 'Australia', '1990-05-12', 'male', 'recorder', false, NOW(), NOW()),
+('recorder2@archery.com.au', 'recorder2@archery.com.au', 'Lisa Martinez', 'Australia', '1988-09-25', 'female', 'recorder', false, NOW(), NOW()),
+('recorder3@archery.com.au', 'recorder3@archery.com.au', 'James Anderson', 'Australia', '1992-02-18', 'male', 'recorder', false, NOW(), NOW());
 
 -- Archers
-INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, created_at, updated_at)
+INSERT INTO account ( email_address, hash_password, fullname, country, date_of_birth, sex, role, deactivated, created_at, updated_at)
 VALUES 
-('archer1@email.com', 'archer1@email.com', 'Oliver Brown', 'Australia', '2000-06-15', 'male', 'archer', NOW(), NOW()),
-( 'archer2@email.com', 'archer2@email.com', 'Sophie Taylor', 'Australia', '1998-03-22', 'female', 'archer', NOW(), NOW()),
-( 'archer3@email.com', 'archer3@email.com', 'Liam Harris', 'Australia', '2002-11-30', 'male', 'archer', NOW(), NOW()),
-( 'archer4@email.com', 'archer4@email.com', 'Isabella White', 'Australia', '1995-08-17', 'female', 'archer', NOW(), NOW()),
-( 'archer5@email.com', 'archer5@email.com', 'Noah Clark', 'Australia', '2003-04-05', 'male', 'archer', NOW(), NOW()),
-( 'archer6@email.com', 'archer6@email.com', 'Mia Lewis', 'Australia', '1997-12-28', 'female', 'archer', NOW(), NOW()),
-( 'archer7@email.com', 'archer7@email.com', 'William Lee', 'Australia', '2001-07-14', 'male', 'archer', NOW(), NOW()),
-( 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', NOW(), NOW()),
-( 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', NOW(), NOW()),
-( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', NOW(), NOW());
+('archer1@email.com', 'archer1@email.com', 'Oliver Brown', 'Australia', '2000-06-15', 'male', 'archer', false, NOW(), NOW()),
+( 'archer2@email.com', 'archer2@email.com', 'Sophie Taylor', 'Australia', '1998-03-22', 'female', 'archer', false, NOW(), NOW()),
+( 'archer3@email.com', 'archer3@email.com', 'Liam Harris', 'Australia', '2002-11-30', 'male', 'archer', false, NOW(), NOW()),
+( 'archer4@email.com', 'archer4@email.com', 'Isabella White', 'Australia', '1995-08-17', 'female', 'archer', false, NOW(), NOW()),
+( 'archer5@email.com', 'archer5@email.com', 'Noah Clark', 'Australia', '2003-04-05', 'male', 'archer', false, NOW(), NOW()),
+( 'archer6@email.com', 'archer6@email.com', 'Mia Lewis', 'Australia', '1997-12-28', 'female', 'archer', false, NOW(), NOW()),
+( 'archer7@email.com', 'archer7@email.com', 'William Lee', 'Australia', '2001-07-14', 'male', 'archer', false, NOW(), NOW()),
+( 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', false, NOW(), NOW()),
+( 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', false, NOW(), NOW()),
+( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', false, NOW(), NOW());
 ( 'deactivated@email.com', 'deactivated@email.com', 'John Deactivated', 'Australia', '1994-04-10', 'male', 'archer', true, '2023-06-15 10:00:00+00', '2026-12-01 15:00:00+00');
 
 
