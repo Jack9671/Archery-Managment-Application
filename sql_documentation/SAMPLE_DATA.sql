@@ -49,9 +49,7 @@ VALUES
 -- ============================================
 
 INSERT INTO admin (admin_id, created_at) VALUES (1, NOW());
-
 INSERT INTO australia_archery_federation (member_id, created_at) VALUES (2, NOW()), (3, NOW());
-
 INSERT INTO recorder (recorder_id, year_of_experience, about_recorder)
 VALUES 
 (4, 8, 'Experienced recorder specializing in outdoor target archery. Certified level 3 judge.'),
@@ -260,7 +258,17 @@ VALUES
 (1, 4, 1, 1, 1),
 (1, 4, 3, 2, 1),
 -- Competition 5 events (ID 13)
-(NULL, 5, 6, 3, 1);
+(NULL, 5, 6, 3, 1),
+-- Additional event contexts to satisfy event structure
+(1, 1, 1, 1, 4),
+(1, 1, 1, 1, 5),
+(1, 1, 1, 1, 6),
+(NULL, 2, 4, 4, 4),
+(NULL, 2, 4, 4, 5),
+(2, 3, 1, 1, 3),
+(2, 3, 1, 1, 4),
+(1, 4, 1, 1, 2),
+(1, 4, 1, 1, 3);
 
 -- ============================================
 -- 16. ROUND SCHEDULES
@@ -338,7 +346,51 @@ VALUES
 (14, 10, 9, 10, 10, 10, 9, 10, 58, 'competition', 'eligible', '2026-03-10 10:00:00+00', '2026-03-10 10:00:00+00'),
 
 -- Archer 16 (professional) in Championship 1, Round 3 (Competition 4)
-(16, 12, 10, 10, 10, 10, 10, 9, 59, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00');
+(16, 12, 10, 10, 10, 10, 10, 9, 59, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00'),
+-- Archer 7 continuing in Competition 1, Round 1 (Championship 1)
+(7, 14, 9, 10, 9, 9, 8, 10, 55, 'competition', 'eligible', '2026-01-15 10:15:00+00', '2026-01-15 10:15:00+00'),
+(7, 15, 10, 9, 9, 10, 9, 9, 56, 'competition', 'eligible', '2026-01-15 10:30:00+00', '2026-01-15 10:30:00+00'),
+(7, 16, 9, 9, 10, 8, 10, 9, 55, 'competition', 'eligible', '2026-01-15 10:45:00+00', '2026-01-15 10:45:00+00'),
+
+-- Archer 8 continuing in Competition 1, Round 1 (Championship 1)
+(8, 14, 10, 10, 9, 10, 9, 10, 58, 'competition', 'eligible', '2026-01-15 10:15:00+00', '2026-01-15 10:15:00+00'),
+(8, 15, 9, 10, 10, 10, 9, 9, 57, 'competition', 'eligible', '2026-01-15 10:30:00+00', '2026-01-15 10:30:00+00'),
+(8, 16, 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-01-15 10:45:00+00', '2026-01-15 10:45:00+00'),
+
+-- Archer 12 continuing in standalone Competition 2, Round 4
+(12, 17, 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2026-02-20 11:30:00+00', '2026-02-20 11:30:00+00'),
+(12, 18, 10, 9, 10, 9, 9, 10, 57, 'competition', 'eligible', '2026-02-20 12:00:00+00', '2026-02-20 12:00:00+00'),
+
+-- Archer 13 continuing in standalone Competition 2, Round 4
+(13, 17, 10, 10, 10, 9, 10, 10, 59, 'competition', 'eligible', '2026-02-20 11:30:00+00', '2026-02-20 11:30:00+00'),
+(13, 18, 10, 10, 10, 10, 9, 10, 59, 'competition', 'eligible', '2026-02-20 12:00:00+00', '2026-02-20 12:00:00+00'),
+
+-- Archer 14 continuing in Championship 2, Competition 3, Round 1
+(14, 19, 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-03-10 10:30:00+00', '2026-03-10 10:30:00+00'),
+(14, 20, 9, 10, 9, 10, 9, 9, 56, 'competition', 'eligible', '2026-03-10 11:00:00+00', '2026-03-10 11:00:00+00'),
+
+-- Archer 7 and 8 MUST also appear in Competition 4, Round 1 (they're in Championship 1)
+(7, 11, 9, 9, 10, 8, 9, 9, 54, 'competition', 'eligible', '2026-04-05 09:30:00+00', '2026-04-05 09:30:00+00'),
+(7, 21, 10, 9, 9, 9, 8, 10, 55, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
+(7, 22, 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
+(8, 11, 10, 10, 9, 10, 9, 9, 57, 'competition', 'eligible', '2026-04-05 09:30:00+00', '2026-04-05 09:30:00+00'),
+(8, 21, 9, 10, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
+(8, 22, 10, 9, 10, 10, 9, 9, 57, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
+
+-- Archer 10 MUST also appear in Competition 4, Round 3 (compound, Championship 1)
+(10, 12, 10, 10, 9, 10, 10, 9, 58, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00'),
+
+-- Practice rounds for various archers (using different event contexts to avoid duplicates)
+(7, 2, 8, 9, 8, 9, 8, 7, 49, 'practice', 'eligible', '2026-12-20 10:00:00+00', '2026-12-20 10:00:00+00'),
+(7, 3, 9, 8, 9, 8, 9, 9, 52, 'practice', 'eligible', '2026-12-22 10:00:00+00', '2026-12-22 10:00:00+00'),
+(8, 2, 9, 10, 9, 9, 10, 8, 55, 'practice', 'eligible', '2026-12-21 14:00:00+00', '2026-12-21 14:00:00+00'),
+(8, 3, 10, 9, 10, 9, 9, 10, 57, 'practice', 'eligible', '2026-12-23 14:00:00+00', '2026-12-23 14:00:00+00'),
+(10, 5, 10, 10, 9, 10, 9, 10, 58, 'practice', 'eligible', '2026-12-15 11:00:00+00', '2026-12-15 11:00:00+00'),
+(12, 7, 9, 9, 10, 9, 8, 9, 54, 'practice', 'eligible', '2026-02-10 13:00:00+00', '2026-02-10 13:00:00+00'),
+(13, 7, 10, 9, 10, 10, 9, 10, 58, 'practice', 'eligible', '2026-02-11 13:00:00+00', '2026-02-11 13:00:00+00'),
+(14, 10, 9, 10, 9, 10, 9, 9, 56, 'practice', 'eligible', '2026-02-28 10:00:00+00', '2026-02-28 10:00:00+00'),
+(16, 12, 10, 10, 10, 9, 10, 10, 59, 'practice', 'eligible', '2026-03-25 09:00:00+00', '2026-03-25 09:00:00+00');
+
 
 -- ============================================
 -- 19. CATEGORY RATING PERCENTILES
@@ -414,82 +466,9 @@ VALUES
 (2, 10, 14, NULL, 9, 'ineligible', 1, '2026-01-10 09:00:00+00', '2026-01-12 16:00:00+00');
 
 
--- ============================================
--- 22. ADDITIONAL PARTICIPATING RECORDS (Practice)
--- ============================================
-
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
-VALUES 
--- Practice rounds for various archers (using different event contexts to avoid duplicates)
-(7, 2, 8, 9, 8, 9, 8, 7, 49, 'practice', 'eligible', '2026-12-20 10:00:00+00', '2026-12-20 10:00:00+00'),
-(7, 3, 9, 8, 9, 8, 9, 9, 52, 'practice', 'eligible', '2026-12-22 10:00:00+00', '2026-12-22 10:00:00+00'),
-(8, 2, 9, 10, 9, 9, 10, 8, 55, 'practice', 'eligible', '2026-12-21 14:00:00+00', '2026-12-21 14:00:00+00'),
-(8, 3, 10, 9, 10, 9, 9, 10, 57, 'practice', 'eligible', '2026-12-23 14:00:00+00', '2026-12-23 14:00:00+00'),
-(10, 5, 10, 10, 9, 10, 9, 10, 58, 'practice', 'eligible', '2026-12-15 11:00:00+00', '2026-12-15 11:00:00+00'),
-(12, 7, 9, 9, 10, 9, 8, 9, 54, 'practice', 'eligible', '2026-02-10 13:00:00+00', '2026-02-10 13:00:00+00'),
-(13, 7, 10, 9, 10, 10, 9, 10, 58, 'practice', 'eligible', '2026-02-11 13:00:00+00', '2026-02-11 13:00:00+00'),
-(14, 10, 9, 10, 9, 10, 9, 9, 56, 'practice', 'eligible', '2026-02-28 10:00:00+00', '2026-02-28 10:00:00+00'),
-(16, 12, 10, 10, 10, 9, 10, 10, 59, 'practice', 'eligible', '2026-03-25 09:00:00+00', '2026-03-25 09:00:00+00');
 
 -- ============================================
--- 23. MORE COMPETITION EVENTS FOR TESTING
--- ============================================
-
--- Add more event contexts for comprehensive testing (IDs 14-22)
-INSERT INTO event_context (yearly_club_championship_id, club_competition_id, round_id, range_id, end_order)
-VALUES 
-(1, 1, 1, 1, 4),
-(1, 1, 1, 1, 5),
-(1, 1, 1, 1, 6),
-(NULL, 2, 4, 4, 4),
-(NULL, 2, 4, 4, 5),
-(2, 3, 1, 1, 3),
-(2, 3, 1, 1, 4),
-(1, 4, 1, 1, 2),
-(1, 4, 1, 1, 3);
-
--- Add more participating records for these events
--- IMPORTANT: Maintaining consistency - archers in Championship 1 must appear in BOTH competitions 1 and 4
-INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
-VALUES 
--- Archer 7 continuing in Competition 1, Round 1 (Championship 1)
-(7, 14, 9, 10, 9, 9, 8, 10, 55, 'competition', 'eligible', '2026-01-15 10:15:00+00', '2026-01-15 10:15:00+00'),
-(7, 15, 10, 9, 9, 10, 9, 9, 56, 'competition', 'eligible', '2026-01-15 10:30:00+00', '2026-01-15 10:30:00+00'),
-(7, 16, 9, 9, 10, 8, 10, 9, 55, 'competition', 'eligible', '2026-01-15 10:45:00+00', '2026-01-15 10:45:00+00'),
-
--- Archer 8 continuing in Competition 1, Round 1 (Championship 1)
-(8, 14, 10, 10, 9, 10, 9, 10, 58, 'competition', 'eligible', '2026-01-15 10:15:00+00', '2026-01-15 10:15:00+00'),
-(8, 15, 9, 10, 10, 10, 9, 9, 57, 'competition', 'eligible', '2026-01-15 10:30:00+00', '2026-01-15 10:30:00+00'),
-(8, 16, 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-01-15 10:45:00+00', '2026-01-15 10:45:00+00'),
-
--- Archer 12 continuing in standalone Competition 2, Round 4
-(12, 17, 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2026-02-20 11:30:00+00', '2026-02-20 11:30:00+00'),
-(12, 18, 10, 9, 10, 9, 9, 10, 57, 'competition', 'eligible', '2026-02-20 12:00:00+00', '2026-02-20 12:00:00+00'),
-
--- Archer 13 continuing in standalone Competition 2, Round 4
-(13, 17, 10, 10, 10, 9, 10, 10, 59, 'competition', 'eligible', '2026-02-20 11:30:00+00', '2026-02-20 11:30:00+00'),
-(13, 18, 10, 10, 10, 10, 9, 10, 59, 'competition', 'eligible', '2026-02-20 12:00:00+00', '2026-02-20 12:00:00+00'),
-
--- Archer 14 continuing in Championship 2, Competition 3, Round 1
-(14, 19, 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-03-10 10:30:00+00', '2026-03-10 10:30:00+00'),
-(14, 20, 9, 10, 9, 10, 9, 9, 56, 'competition', 'eligible', '2026-03-10 11:00:00+00', '2026-03-10 11:00:00+00'),
-
--- Archer 7 and 8 MUST also appear in Competition 4, Round 1 (they're in Championship 1)
-(7, 11, 9, 9, 10, 8, 9, 9, 54, 'competition', 'eligible', '2026-04-05 09:30:00+00', '2026-04-05 09:30:00+00'),
-(7, 21, 10, 9, 9, 9, 8, 10, 55, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
-(7, 22, 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
-(8, 11, 10, 10, 9, 10, 9, 9, 57, 'competition', 'eligible', '2026-04-05 09:30:00+00', '2026-04-05 09:30:00+00'),
-(8, 21, 9, 10, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
-(8, 22, 10, 9, 10, 10, 9, 9, 57, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
-
--- Archer 10 MUST also appear in Competition 4, Round 3 (compound, Championship 1)
-(10, 12, 10, 10, 9, 10, 10, 9, 58, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00');
-
--- Archer 16 already has record in competition 4, which is correct for Championship 1
-
-
--- ============================================
--- 24. FRIENDSHIP LINKS
+-- 22. FRIENDSHIP LINKS
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -517,7 +496,7 @@ VALUES
 (14, 16, '2025-11-01 16:00:00+00');  -- Brisbane elite archers
 
 -- ============================================
--- 25. BLOCK LINKS
+-- 23. BLOCK LINKS
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -529,7 +508,7 @@ VALUES
 (13, 17, '2026-03-05 11:00:00+00');  -- Issue with deactivated account
 
 -- ============================================
--- 26. FRIENDSHIP REQUEST FORMS
+-- 24. FRIENDSHIP REQUEST FORMS
 -- ============================================
 
 INSERT INTO friendship_request_form (sender_id, receiver_id, sender_word, status, created_at, updated_at)
@@ -550,7 +529,7 @@ VALUES
 (13, 14, 'We should connect as Brisbane club members!', 'pending', '2026-11-10 13:00:00+00', '2026-11-12 10:00:00+00');
 
 -- ============================================
--- 27. PERSON-TO-PERSON CHAT HISTORY
+-- 25. PERSON-TO-PERSON CHAT HISTORY
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -599,7 +578,7 @@ VALUES
 (14, 16, 4, 'Years of practice! Keep up your great work too.', 16, '2026-11-02 20:30:00+00');
 
 -- ============================================
--- 28. PERSON-TO-PERSON OLD MESSAGE VISIBILITY
+-- 26. PERSON-TO-PERSON OLD MESSAGE VISIBILITY
 -- ============================================
 -- This table tracks message deletions from a certain point BACKWARDS
 -- When a user clicks "delete conversation" at message X, they delete from message 1 to X
@@ -647,7 +626,7 @@ VALUES
 COMMIT;
 
 -- ============================================
--- 29. SUMMARY & VERIFICATION QUERIES
+-- 27. SUMMARY & VERIFICATION QUERIES
 -- ============================================
 
 -- The following queries can be used to verify the data:
