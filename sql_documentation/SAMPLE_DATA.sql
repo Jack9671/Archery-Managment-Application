@@ -194,17 +194,9 @@ VALUES
 ( 'Field Round (Field Archery · 21-49 · Barebow)', 11, NOW()),
 ( 'Barebow 50m (Outdoor Target Archery · 21-49 · Barebow)', 12, NOW());
 
--- ============================================
--- 12. EQUIVALENT ROUNDS
--- ============================================
-
-INSERT INTO equivalent_round (round_id, equivalent_round_id, date_valid_start, date_valid_end, created_at, updated_at)
-VALUES 
-(1, 2, '2026-01-01 00:00:00+00', '2026-12-31 23:59:59+00', NOW(), NOW()),
-(2, 1, '2026-01-01 00:00:00+00', '2026-12-31 23:59:59+00', NOW(), NOW());
 
 -- ============================================
--- 13. ELIGIBLE GROUPS OF CLUBS
+-- 12. ELIGIBLE GROUPS OF CLUBS
 -- ============================================
 
 INSERT INTO eligible_group_of_club (eligible_group_of_club_id, created_at)
@@ -223,7 +215,7 @@ VALUES
 (3, 4, NOW());  -- Perth Elite only
 
 -- ============================================
--- 14. YEARLY CLUB CHAMPIONSHIPS
+-- 13. YEARLY CLUB CHAMPIONSHIPS
 -- ============================================
 
 INSERT INTO yearly_club_championship ( name, year, creator_id, eligible_group_of_club_id, created_at, updated_at)
@@ -232,7 +224,7 @@ VALUES
 ('Sydney Regional Championship 2026', 2026, 5, 1, NOW(), NOW());
 
 -- ============================================
--- 15. CLUB COMPETITIONS
+-- 14. CLUB COMPETITIONS
 -- ============================================
 
 INSERT INTO club_competition ( name, address, date_start, date_end, creator_id, eligible_group_of_club_id, created_at, updated_at)
@@ -244,7 +236,7 @@ VALUES
 ('Spring Field Archery Meet', '555 Forest Path, Perth WA 6000', '2026-05-12', '2026-05-13', 5, 3, NOW(), NOW());
 
 -- ============================================
--- 16. EVENT CONTEXTS
+-- 15. EVENT CONTEXTS
 -- ============================================
 
 INSERT INTO event_context (yearly_club_championship_id, club_competition_id, round_id, range_id, end_order)
@@ -269,7 +261,7 @@ VALUES
 (NULL, 5, 6, 3, 1);
 
 -- ============================================
--- 17. ROUND SCHEDULES
+-- 16. ROUND SCHEDULES
 -- ============================================
 
 INSERT INTO round_schedule (club_competition_id, round_id, datetime_to_start, datetime_to_end, created_at, updated_at)
@@ -283,7 +275,7 @@ VALUES
 (5, 6, '2026-05-12 08:00:00+00', '2026-05-12 17:00:00+00', NOW(), NOW());
 
 -- ============================================
--- 18. RECORDINGS (Recorders assigned to competitions)
+-- 17. RECORDINGS (Recorders assigned to competitions)
 -- ============================================
 -- RULE: If a recorder records for a yearly_club_championship, they must record for ALL club competitions within that championship
 
@@ -300,7 +292,7 @@ VALUES
 (6, NULL, 5, NOW());
 
 -- ============================================
--- 19. PARTICIPATING (Archer scores)
+-- 18. PARTICIPATING (Archer scores)
 -- ============================================
 -- RULE: If an archer participates in a yearly_club_championship round, they participate in that round across ALL competitions in the championship
 -- Event Context Mapping:
@@ -347,7 +339,7 @@ VALUES
 (16, 12, 10, 10, 10, 10, 10, 9, 59, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00');
 
 -- ============================================
--- 20. CATEGORY RATING PERCENTILES
+-- 19. CATEGORY RATING PERCENTILES
 -- ============================================
 
 INSERT INTO category_rating_percentile (archer_id, category_id, percentile)
@@ -364,7 +356,7 @@ VALUES
 (16, 8, 95);  -- Adult Compound (professional)
 
 -- ============================================
--- 21. REQUEST FORMS
+-- 20. REQUEST FORMS
 -- ============================================
 -- RULE: When requesting to participate in a yearly_club_championship round, the archer participates in that round across ALL linked competitions
 -- RULE: When requesting to record for a yearly_club_championship, the recorder records for ALL linked competitions
@@ -399,7 +391,7 @@ VALUES
 
 
 -- ============================================
--- 25. ACCOUNT REPORTS
+-- 21. ACCOUNT REPORTS
 -- ============================================
 
 INSERT INTO account_report (report_id, reporter_id, report_content, evidence_pdf_file_url, target_account_id, status, decision_made_by, created_at, updated_at)
@@ -409,7 +401,7 @@ VALUES
 
 
 -- ============================================
--- 26. ADDITIONAL PARTICIPATING RECORDS (Practice)
+-- 22. ADDITIONAL PARTICIPATING RECORDS (Practice)
 -- ============================================
 
 INSERT INTO participating (participating_id, event_context_id, score_1st_arrow, score_2nd_arrow, score_3rd_arrow, score_4th_arrow, score_5th_arrow, score_6th_arrow, sum_score, type, status, created_at, updated_at)
@@ -426,7 +418,7 @@ VALUES
 (16, 12, 10, 10, 10, 9, 10, 10, 59, 'practice', 'eligible', '2026-03-25 09:00:00+00', '2026-03-25 09:00:00+00');
 
 -- ============================================
--- 27. MORE COMPETITION EVENTS FOR TESTING
+-- 23. MORE COMPETITION EVENTS FOR TESTING
 -- ============================================
 
 -- Add more event contexts for comprehensive testing (IDs 14-22)
@@ -482,7 +474,7 @@ VALUES
 -- Archer 16 already has record in competition 4, which is correct for Championship 1
 
 -- ============================================
--- 28. ADDITIONAL TEST SCENARIOS
+-- 24. ADDITIONAL TEST SCENARIOS
 -- ============================================
 
 -- Add a deactivated account for testing
@@ -517,7 +509,7 @@ VALUES
 COMMIT;
 
 -- ============================================
--- 30. SUMMARY & VERIFICATION QUERIES
+-- 25. SUMMARY & VERIFICATION QUERIES
 -- ============================================
 
 -- The following queries can be used to verify the data:
