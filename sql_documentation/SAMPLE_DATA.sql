@@ -88,7 +88,7 @@ VALUES
 (13, 2, NULL, 'semi-advanced (>= 4 years of experience )', 'Compound specialist focusing on indoor competitions'),
 (14, 1, NULL, 'advanced (>= 6 years of experience)', 'Experienced recurve archer, enjoy mentoring beginners'),
 (15, 3, NULL, 'beginner (< 1 year of expereince)', 'New to barebow, learning traditional techniques'),
-(16, 2, NULL, 'professional (>= 10 year of experience)', 'Professional compound archer with national titles');
+(16, 2, NULL, 'professional (>= 10 year of experience)', 'Professional compound archer with national titles'),
 (17, 1, NULL, 'intermediate (>= 2 year of experience )', 'Former active member');
 
 -- ============================================
@@ -382,7 +382,7 @@ VALUES
 (6, 'recording', 'enrol', NULL, 5, NULL, 'I would like to be the official recorder for this field archery event.', 'eligible', 'Welcome aboard!', 5, '2026-04-01 10:00:00+00', '2026-04-02 15:00:00+00'),
 
 -- Recorder applying to record for Championship 2 (will record for ALL competitions in this championship, which is just competition 3)
-(5, 'recording', 'enrol', 2, NULL, NULL, 'I would like to record for the Sydney Regional Championship 2026', 'eligible', 'Approved! You will record for all competitions in this championship.', 6, '2026-02-25 10:00:00+00', '2026-02-26 15:00:00+00');
+(5, 'recording', 'enrol', 2, NULL, NULL, 'I would like to record for the Sydney Regional Championship 2026', 'eligible', 'Approved! You will record for all competitions in this championship.', 6, '2026-02-25 10:00:00+00', '2026-02-26 15:00:00+00'),
 
 -- Archer applying for Championship 2 (will participate in competition 3)
 (11, 'participating', 'enrol', 2, NULL, 1, 'I would like to participate in the Sydney Regional Championship', 'pending', '', 6, '2026-03-01 10:00:00+00', '2026-03-01 10:00:00+00'),
@@ -398,7 +398,7 @@ INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_
 VALUES 
 (9, 'I am a beginner looking to join and learn from experienced archers.', 'eligible', 1, 'Welcome to Sydney Archery Club! We look forward to training with you.', '2026-12-01 10:00:00+00', '2026-12-03 14:00:00+00'),
 (11, 'Interested in joining for barebow training opportunities.', 'eligible', 2, 'Approved! Welcome to Melbourne Arrows.', '2026-11-15 09:00:00+00', '2026-11-17 16:00:00+00'),
-(15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2026-01-10 11:00:00+00', '2026-01-10 11:00:00+00');
+(15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2026-01-10 11:00:00+00', '2026-01-10 11:00:00+00'),
 (13, 'Moving to Sydney area, would love to join!', 'in progress', 1, 'We are reviewing your application', '2026-02-15 09:00:00+00', '2026-02-16 14:00:00+00'),
 (16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2026-10-01 10:00:00+00', '2026-10-05 15:00:00+00'),
 (11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2026-01-20 11:00:00+00', '2026-01-22 16:00:00+00');
@@ -539,15 +539,15 @@ VALUES
 (15, 7, 'New to archery and looking to learn from experienced archers. Hope we can be friends!', 'pending', '2026-11-18 14:30:00+00', '2026-11-18 14:30:00+00'),
 (6, 10, 'I record many competitions and would like to connect with more archers', 'pending', '2026-11-19 09:00:00+00', '2026-11-19 09:00:00+00'),
 -- Approved requests (these led to friendship_link entries above)
-(7, 8, 'Hey! Let us connect as club mates', 'eligible', '2025-06-14 09:00:00+00', '2025-06-15 10:00:00+00'),
-(9, 7, 'Would love to train together!', 'eligible', '2025-07-19 10:00:00+00', '2025-07-20 14:30:00+00'),
-(10, 11, 'Fellow Melbourne archer here. Let us be friends!', 'eligible', '2025-05-09 14:00:00+00', '2025-05-10 09:00:00+00'),
-(7, 10, 'Met you at the nationals. Great shooting! Let us stay in touch.', 'eligible', '2025-07-31 16:00:00+00', '2025-08-01 10:30:00+00'),
+(7, 8, 'Hey! Let us connect as club mates', 'accepted', '2025-06-14 09:00:00+00', '2025-06-15 10:00:00+00'),
+(9, 7, 'Would love to train together!', 'accepted', '2025-07-19 10:00:00+00', '2025-07-20 14:30:00+00'),
+(10, 11, 'Fellow Melbourne archer here. Let us be friends!', 'accepted', '2025-05-09 14:00:00+00', '2025-05-10 09:00:00+00'),
+(7, 10, 'Met you at the nationals. Great shooting! Let us stay in touch.', 'accepted', '2025-07-31 16:00:00+00', '2025-08-01 10:30:00+00'),
 -- Rejected requests
-(16, 11, 'Looking to expand my network', 'ineligible', '2026-02-08 10:00:00+00', '2026-02-09 15:00:00+00'),
-(17, 8, 'Want to connect', 'ineligible', '2026-01-10 11:00:00+00', '2026-01-12 09:00:00+00'),
--- In progress requests
-(13, 14, 'We should connect as Brisbane club members!', 'in progress', '2026-11-10 13:00:00+00', '2026-11-12 10:00:00+00');
+(16, 11, 'Looking to expand my network', 'rejected', '2026-02-08 10:00:00+00', '2026-02-09 15:00:00+00'),
+(17, 8, 'Want to connect', 'rejected', '2026-01-10 11:00:00+00', '2026-01-12 09:00:00+00'),
+-- pending requests
+(13, 14, 'We should connect as Brisbane club members!', 'pending', '2026-11-10 13:00:00+00', '2026-11-12 10:00:00+00');
 
 -- ============================================
 -- 27. PERSON-TO-PERSON CHAT HISTORY
