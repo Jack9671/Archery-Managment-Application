@@ -506,10 +506,166 @@ VALUES
 (16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2026-10-01 10:00:00+00', '2026-10-05 15:00:00+00'),
 (11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2026-01-20 11:00:00+00', '2026-01-22 16:00:00+00');
 
+-- ============================================
+-- 25. FRIENDSHIP LINKS
+-- ============================================
+-- Note: account_one_id must be < account_two_id to avoid duplicates
+
+INSERT INTO friendship_link (account_one_id, account_two_id, created_at)
+VALUES 
+-- Archers in the same club (Sydney Archery Club: 7, 8, 9)
+(7, 8, '2025-06-15 10:00:00+00'),
+(7, 9, '2025-07-20 14:30:00+00'),
+(8, 9, '2025-06-20 11:15:00+00'),
+-- Archers in Melbourne Arrows (10, 11, 12)
+(10, 11, '2025-05-10 09:00:00+00'),
+(10, 12, '2025-05-12 16:45:00+00'),
+(11, 12, '2025-05-15 13:20:00+00'),
+-- Cross-club friendships
+(7, 10, '2025-08-01 10:30:00+00'),  -- Sydney to Melbourne
+(8, 13, '2025-09-05 15:00:00+00'),  -- Sydney to Brisbane
+(9, 14, '2025-10-12 11:00:00+00'),  -- Sydney to Brisbane
+-- Recorder friendships
+(4, 5, '2024-03-15 09:00:00+00'),
+(4, 6, '2024-04-20 14:00:00+00'),
+-- Archers and recorders
+(7, 4, '2025-07-01 10:00:00+00'),
+(10, 5, '2025-08-15 13:30:00+00'),
+-- Professional connections
+(14, 16, '2025-11-01 16:00:00+00');  -- Brisbane elite archers
+
+-- ============================================
+-- 26. BLOCK LINKS
+-- ============================================
+-- Note: account_one_id must be < account_two_id to avoid duplicates
+
+INSERT INTO block_link (account_one_id, account_two_id, created_at)
+VALUES 
+-- Some blocked relationships (due to conflicts or disagreements)
+(9, 15, '2026-01-25 14:00:00+00'),   -- Beginner conflict
+(11, 16, '2026-02-10 09:30:00+00'),  -- Club rivalry
+(13, 17, '2026-03-05 11:00:00+00');  -- Issue with deactivated account
+
+-- ============================================
+-- 27. FRIENDSHIP REQUEST FORMS
+-- ============================================
+
+INSERT INTO friendship_request_form (sender_id, receiver_id, sender_word, status, created_at, updated_at)
+VALUES 
+-- Pending requests
+(12, 14, 'Hi! I saw your great scores at the competition. Would love to connect and share tips!', 'pending', '2026-11-15 10:00:00+00', '2026-11-15 10:00:00+00'),
+(15, 7, 'New to archery and looking to learn from experienced archers. Hope we can be friends!', 'pending', '2026-11-18 14:30:00+00', '2026-11-18 14:30:00+00'),
+(6, 10, 'I record many competitions and would like to connect with more archers', 'pending', '2026-11-19 09:00:00+00', '2026-11-19 09:00:00+00'),
+-- Approved requests (these led to friendship_link entries above)
+(7, 8, 'Hey! Let us connect as club mates', 'eligible', '2025-06-14 09:00:00+00', '2025-06-15 10:00:00+00'),
+(9, 7, 'Would love to train together!', 'eligible', '2025-07-19 10:00:00+00', '2025-07-20 14:30:00+00'),
+(10, 11, 'Fellow Melbourne archer here. Let us be friends!', 'eligible', '2025-05-09 14:00:00+00', '2025-05-10 09:00:00+00'),
+(7, 10, 'Met you at the nationals. Great shooting! Let us stay in touch.', 'eligible', '2025-07-31 16:00:00+00', '2025-08-01 10:30:00+00'),
+-- Rejected requests
+(16, 11, 'Looking to expand my network', 'ineligible', '2026-02-08 10:00:00+00', '2026-02-09 15:00:00+00'),
+(17, 8, 'Want to connect', 'ineligible', '2026-01-10 11:00:00+00', '2026-01-12 09:00:00+00'),
+-- In progress requests
+(13, 14, 'We should connect as Brisbane club members!', 'in progress', '2026-11-10 13:00:00+00', '2026-11-12 10:00:00+00');
+
+-- ============================================
+-- 28. PERSON-TO-PERSON CHAT HISTORY
+-- ============================================
+-- Note: account_one_id must be < account_two_id to avoid duplicates
+
+INSERT INTO person_to_person_chat_history (account_one_id, account_two_id, message_order, message, sender_id, created_at)
+VALUES 
+-- Conversation between archers 7 and 8 (same club)
+(7, 8, 1, 'Hey! Ready for practice this weekend?', 7, '2026-11-15 18:00:00+00'),
+(7, 8, 2, 'Absolutely! What time are you thinking?', 8, '2026-11-15 18:05:00+00'),
+(7, 8, 3, 'How about 9 AM Saturday?', 7, '2026-11-15 18:07:00+00'),
+(7, 8, 4, 'Perfect! See you then.', 8, '2026-11-15 18:10:00+00'),
+(7, 8, 5, 'Don''t forget to bring extra arrows!', 7, '2026-11-15 18:12:00+00'),
+
+-- Conversation between archers 10 and 11 (Melbourne club)
+(10, 11, 1, 'Did you see the new competition announcement?', 10, '2026-11-16 10:00:00+00'),
+(10, 11, 2, 'Yes! Are you planning to participate?', 11, '2026-11-16 10:15:00+00'),
+(10, 11, 3, 'Definitely. It''s going to be a great opportunity.', 10, '2026-11-16 10:20:00+00'),
+(10, 11, 4, 'Let''s train together next week to prepare', 11, '2026-11-16 10:25:00+00'),
+
+-- Cross-club conversation between archers 7 and 10
+(7, 10, 1, 'Great scores at the national championship!', 7, '2026-04-08 20:00:00+00'),
+(7, 10, 2, 'Thanks! You did amazing too. That last end was incredible.', 10, '2026-04-08 20:15:00+00'),
+(7, 10, 3, 'Appreciate it! Want to share some training tips sometime?', 7, '2026-04-08 20:30:00+00'),
+(7, 10, 4, 'Sure! I''ll send you my practice routine.', 10, '2026-04-08 20:45:00+00'),
+
+-- Conversation between archer and recorder (7 and 4)
+(4, 7, 1, 'I''ll be recording your competition next month', 4, '2026-03-15 14:00:00+00'),
+(4, 7, 2, 'Great! Looking forward to it.', 7, '2026-03-15 14:10:00+00'),
+(4, 7, 3, 'Let me know if you need any specific score breakdowns', 4, '2026-03-15 14:15:00+00'),
+
+-- Conversation between recorders 4 and 5
+(4, 5, 1, 'How was the recording session yesterday?', 4, '2026-02-21 09:00:00+00'),
+(4, 5, 2, 'Smooth! All scores recorded accurately. Had 50+ participants.', 5, '2026-02-21 09:30:00+00'),
+(4, 5, 3, 'That''s impressive. Any issues with the new scoring system?', 4, '2026-02-21 10:00:00+00'),
+(4, 5, 4, 'None at all. It''s working perfectly.', 5, '2026-02-21 10:15:00+00'),
+
+-- Conversation between archers 8 and 9 (club mates)
+(8, 9, 1, 'Welcome to the club! How are you finding it?', 8, '2026-12-04 16:00:00+00'),
+(8, 9, 2, 'Thanks! Everyone has been really welcoming. Still learning the basics.', 9, '2026-12-04 16:10:00+00'),
+(8, 9, 3, 'If you need any help with your form, just ask!', 8, '2026-12-04 16:15:00+00'),
+(8, 9, 4, 'That would be awesome! Maybe we can practice together?', 9, '2026-12-04 16:20:00+00'),
+
+-- Conversation between archers 14 and 16 (elite level)
+(14, 16, 1, 'Congratulations on your latest title!', 14, '2026-11-02 19:00:00+00'),
+(14, 16, 2, 'Thank you! The competition was tough this year.', 16, '2026-11-02 19:30:00+00'),
+(14, 16, 3, 'Your technique in the finals was flawless', 14, '2026-11-02 20:00:00+00'),
+(14, 16, 4, 'Years of practice! Keep up your great work too.', 16, '2026-11-02 20:30:00+00');
+
+-- ============================================
+-- 29. PERSON-TO-PERSON OLD MESSAGE VISIBILITY
+-- ============================================
+-- This table tracks message deletions from a certain point BACKWARDS
+-- When a user clicks "delete conversation" at message X, they delete from message 1 to X
+-- Future messages (> X) remain visible
+-- The message_order represents the LAST message deleted (all messages <= this number are deleted)
+
+INSERT INTO person_to_person_old_message_visibility (account_one_id, account_two_id, message_order, account_one_viewable, account_two_viewable)
+VALUES 
+-- Conversation 7-8 (5 messages total): archer 7 deleted conversation when message 3 was latest (deleted 1,2,3; kept 4,5)
+(7, 8, 1, false, true),
+(7, 8, 2, false, true),
+(7, 8, 3, false, true),
+-- Messages 4 and 5 are still visible to archer 7 (no entries = default visible)
+
+-- Conversation 10-11 (4 messages total): archer 11 deleted when message 2 was latest (deleted 1,2; kept 3,4)
+(10, 11, 1, true, false),
+(10, 11, 2, true, false),
+-- Messages 3 and 4 are still visible to archer 11
+
+-- Conversation 7-10 (4 messages total): archer 10 deleted when message 3 was latest (deleted 1,2,3; only message 4 remains)
+(7, 10, 1, true, false),
+(7, 10, 2, true, false),
+(7, 10, 3, true, false),
+-- Message 4 is still visible to archer 10
+
+-- Conversation 4-5 (4 messages total): recorder 5 deleted when message 1 was latest (deleted only message 1; kept 2,3,4)
+(4, 5, 1, true, false),
+-- Messages 2, 3, 4 are still visible to recorder 5
+
+-- Conversation 8-9 (4 messages total): archer 8 deleted entire conversation when message 4 was latest (deleted all 1,2,3,4)
+(8, 9, 1, false, true),
+(8, 9, 2, false, true),
+(8, 9, 3, false, true),
+(8, 9, 4, false, true),
+
+-- Conversation 14-16 (4 messages total): both users deleted when message 2 was latest (both deleted 1,2; both can see 3,4)
+(14, 16, 1, false, false),
+(14, 16, 2, false, false);
+-- Messages 3 and 4 are visible to both
+
+-- Note: Messages not in this table default to visible for both parties
+-- Conversation 4-7 (3 messages) has no deletions, so no entries needed
+-- If new messages arrive after deletion, they will be visible (their message_order > deleted threshold)
+
 COMMIT;
 
 -- ============================================
--- 25. SUMMARY & VERIFICATION QUERIES
+-- 30. SUMMARY & VERIFICATION QUERIES
 -- ============================================
 
 -- The following queries can be used to verify the data:
@@ -520,6 +676,9 @@ COMMIT;
 -- SELECT COUNT(*) as total_competitions FROM club_competition;
 -- SELECT COUNT(*) as total_participations FROM participating;
 -- SELECT COUNT(*) as total_friendships FROM friendship_link;
+-- SELECT COUNT(*) as total_friend_requests FROM friendship_request_form;
+-- SELECT COUNT(*) as total_chat_messages FROM person_to_person_chat_history;
+-- SELECT COUNT(*) as total_blocks FROM block_link;
 -- SELECT COUNT(*) as total_groups FROM "group";
 
 -- Check competition schedules:
@@ -542,6 +701,20 @@ COMMIT;
 -- LEFT JOIN archer a ON c.club_id = a.club_id
 -- GROUP BY c.club_id, c.name;
 
+-- Check friendship connections:
+-- SELECT acc1.fullname as person_1, acc2.fullname as person_2, fl.created_at
+-- FROM friendship_link fl
+-- JOIN account acc1 ON fl.account_one_id = acc1.account_id
+-- JOIN account acc2 ON fl.account_two_id = acc2.account_id
+-- ORDER BY fl.created_at DESC;
+
+-- Check chat messages between friends:
+-- SELECT acc1.fullname as sender, acc2.fullname as receiver, pch.message, pch.created_at
+-- FROM person_to_person_chat_history pch
+-- JOIN account acc1 ON pch.sender_id = acc1.account_id
+-- JOIN account acc2 ON (pch.account_one_id = acc2.account_id OR pch.account_two_id = acc2.account_id) AND acc2.account_id != acc1.account_id
+-- ORDER BY pch.created_at;
+
 -- ============================================
 -- DATA INSERTION COMPLETE
 -- ============================================
@@ -558,11 +731,29 @@ COMMIT;
 -- - 2 Yearly championships
 -- - 5 Club competitions
 -- - 22 Event contexts
--- - 50+ Participating records
--- - Multiple forms (competition, enrollment, friendship, group)
--- - Chat histories (person-to-person and group)
--- - AI conversation histories
--- - Friendship links and group memberships
+-- - 43 Participating records
+-- - 15 Friendship links
+-- - 3 Block links
+-- - 10 Friendship request forms
+-- - 30 Person-to-person chat messages
+-- - 17 Message visibility records (demonstrating backward deletion pattern)
+-- - 2 Account reports
+-- - 6 club enrollment forms
+--
+-- ============================================
+-- MESSAGE DELETION PATTERN:
+-- ============================================
+-- The person_to_person_old_message_visibility table demonstrates
+-- backward deletion (deleting history up to a point):
+-- - When a user deletes at message X, messages 1 through X are deleted
+-- - Future messages (> X) remain visible
+-- - New messages sent after deletion are always visible
+-- 
+-- Examples in sample data:
+-- - Archer 7 deleted conversation with 8 up to message 3 (messages 4,5 still visible)
+-- - Archer 11 deleted conversation with 10 up to message 2 (messages 3,4 still visible)
+-- - Archer 8 deleted entire conversation with 9 up to message 4 (all deleted)
+-- - Both archers 14 and 16 deleted up to message 2 (messages 3,4 visible to both)
 --
 -- ============================================
 -- CONSISTENCY RULES ENFORCED:
