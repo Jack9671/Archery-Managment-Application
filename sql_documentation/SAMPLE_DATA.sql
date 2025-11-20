@@ -40,7 +40,7 @@ VALUES
 ( 'archer7@email.com', 'archer7@email.com', 'William Lee', 'Australia', '2001-07-14', 'male', 'archer', false, NOW(), NOW()),
 ( 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', false, NOW(), NOW()),
 ( 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', false, NOW(), NOW()),
-( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', false, NOW(), NOW());
+( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', false, NOW(), NOW()),
 ( 'deactivated@email.com', 'deactivated@email.com', 'John Deactivated', 'Australia', '1994-04-10', 'male', 'archer', true, '2023-06-15 10:00:00+00', '2026-12-01 15:00:00+00');
 
 
