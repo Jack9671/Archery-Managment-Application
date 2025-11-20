@@ -41,6 +41,8 @@ VALUES
 ( 'archer8@email.com', 'archer8@email.com', 'Charlotte Walker', 'Australia', '1999-01-20', 'female', 'archer', NOW(), NOW()),
 ( 'archer9@email.com', 'archer9@email.com', 'Jack Robinson', 'Australia', '2004-09-08', 'male', 'archer', NOW(), NOW()),
 ( 'archer10@email.com', 'archer10@email.com', 'Amelia Young', 'Australia', '1996-05-25', 'female', 'archer', NOW(), NOW());
+( 'deactivated@email.com', 'deactivated@email.com', 'John Deactivated', 'Australia', '1994-04-10', 'male', 'archer', true, '2023-06-15 10:00:00+00', '2026-12-01 15:00:00+00');
+
 
 -- ============================================
 -- 2. ROLE-SPECIFIC TABLES
@@ -87,7 +89,7 @@ VALUES
 (14, 1, NULL, 'advanced (>= 6 years of experience)', 'Experienced recurve archer, enjoy mentoring beginners'),
 (15, 3, NULL, 'beginner (< 1 year of expereince)', 'New to barebow, learning traditional techniques'),
 (16, 2, NULL, 'professional (>= 10 year of experience)', 'Professional compound archer with national titles');
-
+(17, 1, NULL, 'intermediate (>= 2 year of experience )', 'Former active member');
 
 -- ============================================
 -- 5. CLUBS
@@ -382,12 +384,24 @@ VALUES
 -- Recorder applying to record for Championship 2 (will record for ALL competitions in this championship, which is just competition 3)
 (5, 'recording', 'enrol', 2, NULL, NULL, 'I would like to record for the Sydney Regional Championship 2026', 'eligible', 'Approved! You will record for all competitions in this championship.', 6, '2026-02-25 10:00:00+00', '2026-02-26 15:00:00+00');
 
+-- Archer applying for Championship 2 (will participate in competition 3)
+(11, 'participating', 'enrol', 2, NULL, 1, 'I would like to participate in the Sydney Regional Championship', 'pending', '', 6, '2026-03-01 10:00:00+00', '2026-03-01 10:00:00+00'),
+-- Archer applying for Championship 1, Round 1 (will participate in competitions 1 and 4)
+(13, 'participating', 'enrol', 1, NULL, 1, 'Application for National Championship Round 1', 'in progress', 'Under review, will update soon', 4, '2026-03-20 14:00:00+00', '2026-03-22 09:00:00+00'),
+-- Archer applying for standalone competition 5
+(15, 'participating', 'enrol', NULL, 5, 6, 'Want to try field archery for the first time', 'ineligible', 'Sorry, this competition is for advanced archers only', 6, '2026-04-01 11:00:00+00', '2026-04-03 16:00:00+00'),
+-- Recorder applying to record for Championship 1 (will record for ALL competitions 1 and 4)
+(5, 'recording', 'enrol', 1, NULL, NULL, 'Application to record for Australian National Championship 2026', 'pending', '', 4, '2026-03-20 14:00:00+00', '2026-03-20 14:00:00+00');
+ 
 -- Club Enrollment Forms
 INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)
 VALUES 
 (9, 'I am a beginner looking to join and learn from experienced archers.', 'eligible', 1, 'Welcome to Sydney Archery Club! We look forward to training with you.', '2026-12-01 10:00:00+00', '2026-12-03 14:00:00+00'),
 (11, 'Interested in joining for barebow training opportunities.', 'eligible', 2, 'Approved! Welcome to Melbourne Arrows.', '2026-11-15 09:00:00+00', '2026-11-17 16:00:00+00'),
 (15, 'Seeking high-level training and competition opportunities.', 'pending', 4, '', '2026-01-10 11:00:00+00', '2026-01-10 11:00:00+00');
+(13, 'Moving to Sydney area, would love to join!', 'in progress', 1, 'We are reviewing your application', '2026-02-15 09:00:00+00', '2026-02-16 14:00:00+00'),
+(16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2026-10-01 10:00:00+00', '2026-10-05 15:00:00+00'),
+(11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2026-01-20 11:00:00+00', '2026-01-22 16:00:00+00');
 
 
 -- ============================================
@@ -460,7 +474,7 @@ VALUES
 (14, 19, 10, 9, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-03-10 10:30:00+00', '2026-03-10 10:30:00+00'),
 (14, 20, 9, 10, 9, 10, 9, 9, 56, 'competition', 'eligible', '2026-03-10 11:00:00+00', '2026-03-10 11:00:00+00'),
 
--- CONSISTENCY FIX: Archer 7 and 8 MUST also appear in Competition 4, Round 1 (they're in Championship 1)
+-- Archer 7 and 8 MUST also appear in Competition 4, Round 1 (they're in Championship 1)
 (7, 11, 9, 9, 10, 8, 9, 9, 54, 'competition', 'eligible', '2026-04-05 09:30:00+00', '2026-04-05 09:30:00+00'),
 (7, 21, 10, 9, 9, 9, 8, 10, 55, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
 (7, 22, 9, 10, 9, 9, 10, 9, 56, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
@@ -468,46 +482,14 @@ VALUES
 (8, 21, 9, 10, 10, 9, 10, 10, 58, 'competition', 'eligible', '2026-04-05 09:45:00+00', '2026-04-05 09:45:00+00'),
 (8, 22, 10, 9, 10, 10, 9, 9, 57, 'competition', 'eligible', '2026-04-05 10:00:00+00', '2026-04-05 10:00:00+00'),
 
--- CONSISTENCY FIX: Archer 10 MUST also appear in Competition 4, Round 3 (compound, Championship 1)
+-- Archer 10 MUST also appear in Competition 4, Round 3 (compound, Championship 1)
 (10, 12, 10, 10, 9, 10, 10, 9, 58, 'competition', 'eligible', '2026-04-06 09:30:00+00', '2026-04-06 09:30:00+00');
 
 -- Archer 16 already has record in competition 4, which is correct for Championship 1
 
--- ============================================
--- 24. ADDITIONAL TEST SCENARIOS
--- ============================================
-
--- Add a deactivated account for testing
-INSERT INTO account (account_id, email_address, hash_password, fullname, country, date_of_birth, sex, role, deactivated, created_at, updated_at)
-VALUES 
-(17, 'deactivated@email.com', 'deactivated@email.com', 'John Deactivated', 'Australia', '1994-04-10', 'male', 'archer', true, '2023-06-15 10:00:00+00', '2026-12-01 15:00:00+00');
-
-INSERT INTO archer (archer_id, default_equipment_id, club_id, level, about_archer)
-VALUES 
-(17, 1, NULL, 'intermediate (>= 2 year of experience )', 'Former active member');
-
--- Add pending competition requests for testing approval workflow
--- IMPORTANT: Requests for championships affect ALL competitions in that championship
-INSERT INTO request_competition_form (sender_id, type, action, yearly_club_championship_id, club_competition_id, round_id, sender_word, status, reviewer_word, reviewed_by, created_at, updated_at)
-VALUES 
--- Archer applying for Championship 2 (will participate in competition 3)
-(11, 'participating', 'enrol', 2, NULL, 1, 'I would like to participate in the Sydney Regional Championship', 'pending', '', 6, '2026-03-01 10:00:00+00', '2026-03-01 10:00:00+00'),
--- Archer applying for Championship 1, Round 1 (will participate in competitions 1 and 4)
-(13, 'participating', 'enrol', 1, NULL, 1, 'Application for National Championship Round 1', 'in progress', 'Under review, will update soon', 4, '2026-03-20 14:00:00+00', '2026-03-22 09:00:00+00'),
--- Archer applying for standalone competition 5
-(15, 'participating', 'enrol', NULL, 5, 6, 'Want to try field archery for the first time', 'ineligible', 'Sorry, this competition is for advanced archers only', 6, '2026-04-01 11:00:00+00', '2026-04-03 16:00:00+00'),
--- Recorder applying to record for Championship 1 (will record for ALL competitions 1 and 4)
-(5, 'recording', 'enrol', 1, NULL, NULL, 'Application to record for Australian National Championship 2026', 'pending', '', 4, '2026-03-20 14:00:00+00', '2026-03-20 14:00:00+00');
-
--- Add more club enrollment forms with different statuses
-INSERT INTO club_enrollment_form (sender_id, sender_word, status, club_id, club_creator_word, created_at, updated_at)
-VALUES 
-(13, 'Moving to Sydney area, would love to join!', 'in progress', 1, 'We are reviewing your application', '2026-02-15 09:00:00+00', '2026-02-16 14:00:00+00'),
-(16, 'Looking for a more competitive environment', 'eligible', 4, 'Your credentials are excellent. Welcome!', '2026-10-01 10:00:00+00', '2026-10-05 15:00:00+00'),
-(11, 'Interested in joining for weekend practice', 'ineligible', 4, 'Unfortunately, membership is currently full', '2026-01-20 11:00:00+00', '2026-01-22 16:00:00+00');
 
 -- ============================================
--- 25. FRIENDSHIP LINKS
+-- 24. FRIENDSHIP LINKS
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -535,7 +517,7 @@ VALUES
 (14, 16, '2025-11-01 16:00:00+00');  -- Brisbane elite archers
 
 -- ============================================
--- 26. BLOCK LINKS
+-- 25. BLOCK LINKS
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -547,7 +529,7 @@ VALUES
 (13, 17, '2026-03-05 11:00:00+00');  -- Issue with deactivated account
 
 -- ============================================
--- 27. FRIENDSHIP REQUEST FORMS
+-- 26. FRIENDSHIP REQUEST FORMS
 -- ============================================
 
 INSERT INTO friendship_request_form (sender_id, receiver_id, sender_word, status, created_at, updated_at)
@@ -568,7 +550,7 @@ VALUES
 (13, 14, 'We should connect as Brisbane club members!', 'in progress', '2026-11-10 13:00:00+00', '2026-11-12 10:00:00+00');
 
 -- ============================================
--- 28. PERSON-TO-PERSON CHAT HISTORY
+-- 27. PERSON-TO-PERSON CHAT HISTORY
 -- ============================================
 -- Note: account_one_id must be < account_two_id to avoid duplicates
 
@@ -617,7 +599,7 @@ VALUES
 (14, 16, 4, 'Years of practice! Keep up your great work too.', 16, '2026-11-02 20:30:00+00');
 
 -- ============================================
--- 29. PERSON-TO-PERSON OLD MESSAGE VISIBILITY
+-- 28. PERSON-TO-PERSON OLD MESSAGE VISIBILITY
 -- ============================================
 -- This table tracks message deletions from a certain point BACKWARDS
 -- When a user clicks "delete conversation" at message X, they delete from message 1 to X
@@ -665,7 +647,7 @@ VALUES
 COMMIT;
 
 -- ============================================
--- 30. SUMMARY & VERIFICATION QUERIES
+-- 29. SUMMARY & VERIFICATION QUERIES
 -- ============================================
 
 -- The following queries can be used to verify the data:
