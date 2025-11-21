@@ -2,35 +2,6 @@ from utility_function.initilize_dbconnection import supabase
 import streamlit as st
 import pandas as pd
 
-def get_club_competitions():
-    """Get all club competitions"""
-    try:
-        response = supabase.table("club_competition").select("club_competition_id, name").execute()
-        return {comp['name']: comp['club_competition_id'] for comp in response.data} if response.data else {}
-    except Exception as e:
-        st.error(f"Error fetching club competitions: {str(e)}")
-        return {}
-
-def get_rounds():
-    """Get all rounds"""
-    try:
-        response = supabase.table("round").select("round_id, name").execute()
-        return {round['name']: round['round_id'] for round in response.data} if response.data else {}
-    except Exception as e:
-        st.error(f"Error fetching rounds: {str(e)}")
-        return {}
-
-def get_archers():
-    """Get all archers with their account names"""
-    try:
-        response = supabase.table("archer").select(
-            "archer_id, account!inner(fullname)"
-        ).execute()
-        return {archer['account']['fullname']: archer['archer_id'] for archer in response.data} if response.data else {}
-    except Exception as e:
-        st.error(f"Error fetching archers: {str(e)}")
-        return {}
-
 def get_archer_scores(participating_id, club_competition_id, round_id, range_id=None):
     """
     Get participating records for a specific archer in a specific competition and round
@@ -107,13 +78,23 @@ def get_recorder_scores(club_competition_id, round_id=None, range_id=None, parti
         st.error(f"Error fetching recorder scores: {str(e)}")
         return []
 
-def update_participating_scores(updates):
+def update_participating_scores(updates: list[dict]) -> bool:
     """
     Update participating scores in the database
     
     Args:
         updates: List of dictionaries with updated participating records
-    
+        example:
+        [
+            {
+                'participating_id': 1,
+                'event_context_id': 10,
+                'type': 'competition',
+                'score_1st_arrow': 10,
+                'score_2nd_arrow': 9,
+                ...
+                'score_6th_arrow': 10,
+                'status': 'verified'  # Optional, only for recorder updates
     Returns:
         Boolean indicating success
     """

@@ -1,15 +1,6 @@
 import streamlit as st
 import pandas as pd
 from utility_function.initilize_dbconnection import supabase
-from utility_function.score_tracking_utility import (
-    get_club_competitions,
-    get_rounds,
-    get_archers,
-    get_archer_scores,
-    get_recorder_scores,
-    update_participating_scores,
-    format_participating_data_for_display
-)
 import utility_function.score_tracking_utility  as score_tracking_utility
 
 st.set_page_config(page_title="Score Tracking", layout="wide")
@@ -74,7 +65,7 @@ if st.session_state['role'] == 'archer':
         participating_id = st.session_state['user_id']
         
         # Fetch scores
-        scores = get_archer_scores(participating_id, club_competition_id, round_id, range_id)
+        scores = score_tracking_utility.get_archer_scores(participating_id, club_competition_id, round_id, range_id)
         
         if not scores and st.session_state.get('role') == 'recorder':
             st.info("the archer does not register for the selected round.")
@@ -82,7 +73,7 @@ if st.session_state['role'] == 'archer':
             st.info("you do not register for this round.")
         else:            
             # Format data for display
-            df = format_participating_data_for_display(scores, include_archer_name=False)
+            df = score_tracking_utility.format_participating_data_for_display(scores, include_archer_name=False)
             
             # Configure columns that can be edited (only if status is not "eligible")
             column_config = {
@@ -153,7 +144,7 @@ if st.session_state['role'] == 'archer':
                                 })
                     
                     if updates:
-                        if update_participating_scores(updates):
+                        if score_tracking_utility.update_participating_scores(updates):
                             st.success(f"Successfully updated {len(updates)} score record(s)!")
                             st.rerun()
                         else:
@@ -218,7 +209,7 @@ elif st.session_state['role'] == 'recorder':
         participating_id = participant_map[selected_archer_name]
 
         # Fetch scores
-        scores = get_recorder_scores(club_competition_id, round_id, range_id, participating_id)
+        scores = score_tracking_utility.get_recorder_scores(club_competition_id, round_id, range_id, participating_id)
         
         if not scores:
             st.info("No score records found for the selected filters.")
@@ -226,7 +217,7 @@ elif st.session_state['role'] == 'recorder':
             st.success(f"Found {len(scores)} score record(s).")
             
             # Format data for display
-            df = format_participating_data_for_display(scores, include_archer_name=True)
+            df = score_tracking_utility.format_participating_data_for_display(scores, include_archer_name=True)
             
             # Configure columns that can be edited
             column_config = {
@@ -287,7 +278,7 @@ elif st.session_state['role'] == 'recorder':
                             })
                     
                     if updates:
-                        if update_participating_scores(updates):
+                        if score_tracking_utility.update_participating_scores(updates):
                             st.success(f"Successfully updated {len(updates)} score record(s)!")
                             st.rerun()
                         else:
