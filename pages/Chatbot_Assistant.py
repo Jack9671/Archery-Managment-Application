@@ -134,4 +134,7 @@ if st.session_state.current_chat:
         st.rerun()
 
 else:
+
     st.write("New coversation")
+
+
