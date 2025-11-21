@@ -105,7 +105,7 @@ if st.session_state.current_chat:
             st.markdown(msg["response"])
 
     # Nhập câu hỏi mới
-    user_input = st.chat_input("Nhập câu hỏi của bạn về bắn cung...")
+    user_input = st.chat_input("Enter your question...")
     if user_input:
         st.chat_message("user").markdown(user_input)
 
@@ -134,4 +134,4 @@ if st.session_state.current_chat:
         st.rerun()
 
 else:
-    st.write("👉 Tạo hoặc chọn một đoạn hội thoại ở bên trái để bắt đầu.")
+    st.write("New coversation")
