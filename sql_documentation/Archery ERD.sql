@@ -351,7 +351,7 @@ CREATE TABLE "person_to_person_old_message_visibility" (
   PRIMARY KEY ("account_one_id", "account_two_id", "message_order")
 );
 
-CREATE INDEX "yearly_club_championship_id-round_id-range_id" ON "event_context" ("yearly_club_championship_id", "round_id", "range_id");
+CREATE INDEX "yearly_club_championship_id-round_id" ON "event_context" ("yearly_club_championship_id", "round_id");
 
 CREATE INDEX "club_competition_id-round_id-range_id" ON "event_context" ("club_competition_id", "round_id", "range_id");
 
@@ -361,13 +361,13 @@ CREATE INDEX "date_start-eligible_group_of_club_id" ON "club_competition" ("date
 
 CREATE INDEX "category_id" ON "round" ("category_id");
 
-CREATE INDEX "yearly_club_championship_id-round_id" ON "request_competition_form" ("yearly_club_championship_id", "round_id");
-
-CREATE INDEX "club_competition_id-round_id" ON "request_competition_form" ("club_competition_id", "round_id");
-
 CREATE INDEX "club_id" ON "club_enrollment_form" ("club_id");
 
 CREATE INDEX "equipment_id" ON "category" ("equipment_id");
+
+CREATE INDEX "participating_event_context" ON "participating" ("event_context_id");
+
+CREATE INDEX "club_competition_id-datetime_to_start" ON "round_schedule" ("club_competition_id", "datetime_to_start");
 
 COMMENT ON COLUMN "account"."email_address" IS 'used for authentication and as an account name when log in or sign up';
 
